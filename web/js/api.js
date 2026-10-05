@@ -27,3 +27,5 @@ window.ABDM_API.assignQueue=async function(id,queueId){return this.request("/dow
 window.ABDM_API.moveQueueItem=async function(id,direction){return this.request("/downloads/"+encodeURIComponent(id)+"/move",{method:"POST",body:JSON.stringify({direction})})};
 
 window.ABDM_API.unqueue=async function(id){return this.request("/downloads/"+encodeURIComponent(id)+"/unqueue",{method:"POST"})};
+
+window.ABDM_API.browser=async function(path){return this.request("/browser"+(path?("?path="+encodeURIComponent(path)):""))};
