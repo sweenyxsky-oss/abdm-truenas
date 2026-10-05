@@ -35,7 +35,7 @@ paths:
         "200":
           description: Successfully added the download
           content:
-            plain/text:
+            text/plain:
               schema:
                 type: string
                 description: OK on success
@@ -96,7 +96,7 @@ paths:
         "200":
           description: Successfully added the download task
           content:
-            plain/text:
+            text/plain:
               schema:
                 type: string
                 description: OK on success
@@ -110,12 +110,30 @@ paths:
       summary: List downloads
   /downloads/{id}/pause:
     post:
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
       summary: Pause a download
   /downloads/{id}/resume:
     post:
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
       summary: Resume a download
   /downloads/{id}/retry:
     post:
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
       summary: Reset and retry a download
   /downloads/{id}/remove:
     post:
@@ -128,30 +146,84 @@ paths:
             type: boolean
   /downloads/{id}/queue:
     post:
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
       summary: Assign a download to a queue
   /downloads/{id}/unqueue:
     post:
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
       summary: Remove a download from its queue
   /downloads/{id}/move:
     post:
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
       summary: Move a queued download
   /queues/{id}/start:
     post:
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
       summary: Start a queue
   /queues/{id}/stop:
     post:
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
       summary: Stop a queue
   /queues/{id}/delete:
     post:
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
       summary: Delete a queue
   /queues/{id}/rename:
     post:
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
       summary: Rename a queue
   /queues/{id}/concurrency:
     post:
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
       summary: Set queue concurrency
   /queues/{id}/schedule:
     post:
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
       summary: Configure queue scheduler
   /browser:
     get:
