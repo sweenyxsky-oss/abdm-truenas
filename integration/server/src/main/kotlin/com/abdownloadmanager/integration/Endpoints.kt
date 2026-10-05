@@ -68,6 +68,16 @@ internal fun Application.setupRouting(
                 val jsonResponse = json.encodeToString(ListSerializer(ApiQueueModel.serializer()), queues)
                 call.respondText(jsonResponse)
             }
+            route("/queues/{id}") {
+                post("/start") {
+                    integrationHandler.startQueue(call.parameters["id"]!!.toLong())
+                    call.respondText("OK")
+                }
+                post("/stop") {
+                    integrationHandler.stopQueue(call.parameters["id"]!!.toLong())
+                    call.respondText("OK")
+                }
+            }
             route("/downloads/{id}") {
                 post("/pause") {
                     integrationHandler.pauseDownload(call.parameters["id"]!!.toLong())
