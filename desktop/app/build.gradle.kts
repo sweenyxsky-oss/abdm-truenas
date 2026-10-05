@@ -367,3 +367,11 @@ tasks.register(CiUtils.getCreateBinaryFolderForCiTaskName()) {
     }
 }
 // ======= end of GitHub action stuff
+
+// Headless TrueNAS runtime. This uses the same downloader core as the desktop app.
+tasks.register<JavaExec>("runHeadless") {
+    group = "application"
+    description = "Run ABDM without the Compose desktop UI"
+    mainClass.set("com.abdownloadmanager.desktop.headless.HeadlessApp")
+    classpath = sourceSets["main"].runtimeClasspath
+}
