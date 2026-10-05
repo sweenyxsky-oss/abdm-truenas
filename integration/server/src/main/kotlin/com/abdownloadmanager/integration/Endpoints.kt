@@ -3,6 +3,7 @@ package com.abdownloadmanager.integration
 import com.abdownloadmanager.integration.model.AddDownloadsFromIntegration
 import com.abdownloadmanager.integration.model.ApiDownloadModel
 import com.abdownloadmanager.integration.model.ApiBrowserResponse
+import com.abdownloadmanager.integration.model.ApiCategoryModel
 import com.abdownloadmanager.integration.model.ApiQueueModel
 import com.abdownloadmanager.integration.model.NewDownloadTask
 import io.ktor.server.application.Application
@@ -60,7 +61,30 @@ internal fun Application.setupRouting(
                 }
                 call.respondText("OK")
             }
-            get("/browser") {\n                val path = call.request.queryParameters["path"]\n                call.respondText(json.encodeToString(ApiBrowserResponse.serializer(), integrationHandler.browse(path)))\n            }\n            get("/downloads") {
+            get("/browser") {\n                val path = call.request.queryParameters["path"]\n                call.respondText(json.encodeToString(ApiBrowserResponse.serializer(), integrationHandler.browse(path)))\n            }\n            get("/categories") {
+                call.respondText(json.encodeToString(ListSerializer(ApiCategoryModel.serializer()), integrationHandler.listCategories()))
+            }
+            post("/categories") {
+                val body=json.decodeFromString<Map<String, kotlinx.serialization.json.JsonElement>>(call.receiveText())
+                val name=body["name"]?.toString()?.trim('"') ?: "New Category"
+                val path=body["path"]?.toString()?.trim('"') ?: ""
+                val usePath=body["usePath"]?.toString()?.toBooleanStrictOrNull() ?: true
+                val fileTypes=body["fileTypes"]?.let { json.decodeFromJsonElement<List<String>>(it) } ?: emptyList()
+                val urlPatterns=body["urlPatterns"]?.let { json.decodeFromJsonElement<List<String>>(it) } ?: emptyList()
+                call.respondText(integrationHandler.addCategory(name,path,usePath,fileTypes,urlPatterns).toString())
+            }
+            route("/categories/{id}") {
+                post("/rename") {
+                    val body=json.decodeFromString<Map<String,String>>(call.receiveText())
+                    integrationHandler.renameCategory(call.parameters["id"]!!.toLong(), body["name"] ?: "Category")
+                    call.respondText("OK")
+                }
+                post("/delete") {
+                    integrationHandler.deleteCategory(call.parameters["id"]!!.toLong())
+                    call.respondText("OK")
+                }
+            }
+            get("/downloads") {
                 val downloads = integrationHandler.listDownloads()
                 call.respondText(json.encodeToString(ListSerializer(ApiDownloadModel.serializer()), downloads))
             }
