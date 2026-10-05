@@ -5,6 +5,7 @@ import com.abdownloadmanager.integration.model.ApiDownloadModel
 import com.abdownloadmanager.integration.model.ApiBrowserResponse
 import com.abdownloadmanager.integration.model.ApiCategoryModel
 import com.abdownloadmanager.integration.model.ApiQueueModel
+import com.abdownloadmanager.integration.model.ApiSettingsModel
 import com.abdownloadmanager.integration.model.NewDownloadTask
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
@@ -59,6 +60,16 @@ internal fun Application.setupRouting(
                         )
                     )
                 }
+                call.respondText("OK")
+            }
+            get("/settings") {
+                call.respondText(json.encodeToString(ApiSettingsModel.serializer(), integrationHandler.getSettings()))
+            }
+            post("/settings") {
+                val body = json.decodeFromString<Map<String, kotlinx.serialization.json.JsonElement>>(call.receiveText())
+                val settings = json.decodeFromJsonElement(ApiSettingsModel.serializer(), body["settings"] ?: error("Missing settings"))
+                val apiKey = body["apiKey"]?.toString()?.trim('"')?.takeIf { it.isNotBlank() }
+                integrationHandler.updateSettings(settings, apiKey)
                 call.respondText("OK")
             }
             get("/browser") {\n                val path = call.request.queryParameters["path"]\n                call.respondText(json.encodeToString(ApiBrowserResponse.serializer(), integrationHandler.browse(path)))\n            }\n            get("/categories") {
