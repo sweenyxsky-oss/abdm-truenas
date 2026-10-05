@@ -292,8 +292,9 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
             addDownloaderInUiProps.credentials,
             basicDownloadItem = BasicDownloadItem(
                 folder = task.folder?.takeIf { it.isNotBlank() } ?: appSettings.saveLocation.value,
-                name = task.name?.takeIf { it.isNotBlank() } ?: addDownloaderInUiProps.extraConfig.suggestedName
-                ?: task.downloadSource.link.substringAfterLast("/"),
+                name = task.name?.takeIf { it.isNotBlank() }
+                    ?: addDownloaderInUiProps.extraConfig.suggestedName?.takeIf { it.isNotBlank() }
+                    ?: task.downloadSource.link.substringAfterLast("/").ifBlank { "download" },
             ),
         )
         val newDownload = NewDownloadItemProps(
