@@ -105,7 +105,25 @@ class DefaultAppIPCServiceImpl : IDefaultAppIPCService, KoinComponent {
         return downloadSystem.queueManager.queues.value
             .asSequence()
             .map { it.queueModel.value }
-            .map { ApiQueueModel(it.id, it.name) }
+            .map {
+                ApiQueueModel(
+                    id = it.id,
+                    name = it.name,
+                    active = 0,
+                    queued = it.queueItems.size,
+                    total = it.queueItems.size,
+                    running = false,
+                    maxConcurrent = it.maxConcurrent,
+                    items = it.queueItems,
+                    schedulerEnabled = false,
+                    activeDays = emptyList(),
+                    autoStartEnabled = false,
+                    startTime = "00:00",
+                    autoStopEnabled = false,
+                    endTime = "00:00",
+                    stopQueueOnEmpty = it.stopQueueOnEmpty,
+                )
+            }
             .toList()
     }
 
