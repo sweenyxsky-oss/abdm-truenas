@@ -31,7 +31,30 @@ function renderDownloads(){
 function queueRow(q){return `<div class="row"><div><strong>${esc(q.name)}</strong><small>${q.active} active · ${q.queued} queued · ${q.total} total</small></div><span class="tag">${q.running?"Running":"Stopped"}</span></div>`;}
 function renderQueue(){
   const p=paginate(state.queues);
-  return `<div class="toolbar"><div class="grow"></div><button class="primary" onclick="createQueue()">＋ New queue</button></div><div class="card table-wrap"><table class="table"><thead><tr><th>QUEUE</th><th>ACTIVE</th><th>QUEUED</th><th>TOTAL</th><th>STATUS</th><th></th></tr></thead><tbody>${p.items.map(x=>`<tr><td>${esc(x.name)}</td><td>${x.active}</td><td>${x.queued}</td><td>${x.total}</td><td><span class="tag">${x.running?"Running":"Stopped"}</span></td><td><span class="actions">${x.running?<button class="icon-btn" title="Stop queue" onclick="queueAction(${x.id},'stop')">⏹</button>:<button class="icon-btn" title="Start queue" onclick="queueAction(${x.id},'start')">▶</button>}</span></td></tr>`).join("")}</tbody></table></div>${pagination(state.queues.length,p.pages)}`;
+  return `<div class="toolbar"><div class="grow"></div><button class="primary" onclick="createQueue()">＋ New queue</button></div>
+  <div class="queue-grid">${p.items.map(q=>{
+    const items=(q.items||[]).map(id=>state.allDownloads.find(d=>Number(d.id)===Number(id))).filter(Boolean);
+    return `<div class="card queue-card">
+      <div class="queue-head">
+        <div><h3>${esc(q.name)}</h3><small>${q.active} active · ${q.queued} queued · ${q.total} total · max ${q.maxConcurrent||1} concurrent</small></div>
+        <div class="actions">
+          ${q.running?'<button class="icon-btn" title="Stop queue" onclick="queueAction('+q.id+',\'stop\')">⏹</button>':'<button class="icon-btn" title="Start queue" onclick="queueAction('+q.id+',\'start\')">▶</button>'}
+          <button class="icon-btn" title="Rename" onclick="renameQueue(${q.id},${JSON.stringify(q.name)})">✎</button>
+          <button class="icon-btn" title="Concurrency" onclick="setQueueConcurrency(${q.id},${q.maxConcurrent||1})">≡</button>
+          ${q.id!==0?'<button class="icon-btn danger" title="Delete" onclick="deleteQueue('+q.id+','+JSON.stringify(q.name)+')">✕</button>':''}
+        </div>
+      </div>
+      <div class="queue-items">${items.length?items.map((d,i)=>`<div class="queue-item">
+        <div class="queue-order">${i+1}</div>
+        <div class="queue-name"><strong title="${esc(d.name)}">${esc(d.name)}</strong><small>${d.progress}% · ${esc(d.status)} · ${d.speed}</small></div>
+        <div class="actions">
+          <button class="icon-btn" title="Move up" ${i===0?'disabled':''} onclick="moveQueueItem(${d.id},-1)">↑</button>
+          <button class="icon-btn" title="Move down" ${i===items.length-1?'disabled':''} onclick="moveQueueItem(${d.id},1)">↓</button>
+          <button class="icon-btn danger" title="Remove from queue" onclick="assignDownload(${d.id},0)">×</button>
+        </div>
+      </div>`).join(""):`<div class="empty">No downloads in this queue.</div>`}</div>
+    </div>`;
+  }).join("")}</div>${pagination(state.queues.length,p.pages)}`;
 }
 function renderSimple(name,text){return `<div class="card empty"><strong>${name}</strong>${text}</div>`}
 function render(){document.getElementById("page-title").textContent=titles[state.page][0];document.getElementById("page-subtitle").textContent=titles[state.page][1];document.querySelectorAll(".nav-item").forEach(x=>x.classList.toggle("active",x.dataset.page===state.page));let html=state.page==="dashboard"?renderDashboard():state.page==="downloads"?renderDownloads():state.page==="queue"?renderQueue():state.page==="browser"?renderSimple("Browser","Repository browsing will use the headless backend API."):state.page==="categories"?renderSimple("Categories","Create and manage download categories."):state.page==="scheduler"?renderSimple("Scheduler","Configure scheduled download rules."):settings();document.getElementById("app").innerHTML=html}
@@ -50,6 +73,8 @@ window.renameQueue=async function(id,name){const n=prompt("Queue name",name);if(
 window.deleteQueue=async function(id,name){if(id===0)return;if(!confirm("Delete queue '"+name+"'? Downloads remain."))return;try{await ABDM_API.deleteQueue(id);await loadQueues(false)}catch(e){alert(e.message)}};
 window.setQueueConcurrency=async function(id,current){const n=Number(prompt("Maximum simultaneous downloads",current));if(!Number.isInteger(n)||n<1)return;try{await ABDM_API.queueConcurrency(id,n);await loadQueues(false)}catch(e){alert(e.message)}};
 window.moveDownloadToQueue=async function(id){const list=state.queues.map(q=>q.id+" = "+q.name).join("\n");const value=prompt("Enter queue ID:\n"+list,"0");if(value===null)return;const q=Number(value);if(!Number.isInteger(q))return;try{await ABDM_API.assignQueue(id,q);await loadDownloads(false)}catch(e){alert("Queue assignment failed: "+e.message)}};
+window.assignDownload=async function(id,queueId){try{await ABDM_API.assignQueue(id,queueId);await loadDownloads(false);await loadQueues(false)}catch(e){alert("Queue assignment failed: "+e.message)}};
+window.moveQueueItem=async function(id,direction){try{await ABDM_API.moveQueueItem(id,direction);await loadQueues(false);await loadDownloads(true)}catch(e){alert("Queue ordering failed: "+e.message)}};
 window.queueAction=async function(id,action){
   try{await ABDM_API.queueControl(id,action);await loadQueues(false)}catch(e){alert("Queue action failed: "+e.message)}
 };
