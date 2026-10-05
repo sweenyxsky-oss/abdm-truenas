@@ -28,6 +28,18 @@ window.setPage=n=>{state.page=Number(n);render()};window.setSize=n=>{state.pageS
   try{await ABDM_API.control(id,action,removeFile);await loadDownloads(false)}catch(e){alert("Action failed: "+e.message)}
 };
 window.filterDownloads=q=>{state.query=(q||"").toLowerCase();state.downloads=state.query?state.allDownloads.filter(x=>x.name.toLowerCase().includes(state.query)):state.allDownloads.slice();state.page=1;render()};
+window.queueAction=async function(id,action){
+  try{await ABDM_API.queueControl(id,action);await loadQueues(false)}catch(e){alert("Queue action failed: "+e.message)}
+};
+async function loadQueues(quiet=true){
+  if(!state.connected)return;
+  try{
+    const items=await ABDM_API.queues();
+    state.queues=Array.isArray(items)?items:[];
+    if(state.page>Math.max(1,Math.ceil(state.queues.length/state.pageSize)))state.page=1;
+    if(!quiet)render();
+  }catch(err){console.warn("Unable to load queues",err)}
+}
 async function loadDownloads(quiet=true){
   if(!state.connected)return;
   try{
@@ -56,6 +68,6 @@ function formatEta(value){
 document.getElementById("nav").addEventListener("click",e=>{const b=e.target.closest(".nav-item");if(b){state.page=b.dataset.page;state.page=1;render()}});
 document.getElementById("addBtn").onclick=()=>document.getElementById("addDialog").showModal();
 document.getElementById("addForm").addEventListener("submit",async e=>{e.preventDefault();const urls=document.getElementById("urlInput").value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);if(!urls.length)return;try{await ABDM_API.add({urls,folder:document.getElementById("pathInput").value});await loadDownloads(false);document.getElementById("addDialog").close();}catch(err){alert("Backend API error: "+err.message)}});
-async function connect(){try{await ABDM_API.ping();state.connected=true;await loadDownloads(true);document.querySelector(".status-dot").classList.add("ok");document.getElementById("connection").textContent="Backend connected"}catch(e){document.getElementById("connection").textContent="Demo mode"}render()}
+async function connect(){try{await ABDM_API.ping();state.connected=true;await loadDownloads(true);await loadQueues(true);document.querySelector(".status-dot").classList.add("ok");document.getElementById("connection").textContent="Backend connected"}catch(e){document.getElementById("connection").textContent="Demo mode"}render()}
 render();connect();
-setInterval(()=>loadDownloads(true),1500);
+setInterval(()=>{loadDownloads(true);loadQueues(true)},1500);
