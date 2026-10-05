@@ -163,7 +163,8 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
     }
 
     override suspend fun renameCategory(id: Long, name: String) {
-        categoryManager.updateCategory(id) { it.copy(name = name) }
+        require(name.isNotBlank())
+        categoryManager.updateCategory(id) { it.copy(name = name.trim()) }
     }
 
     override suspend fun deleteCategory(id: Long) {
