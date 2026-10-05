@@ -283,6 +283,7 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
     override suspend fun moveQueueItem(downloadId: Long, direction: Int) { val qid = queueManager.findItemInQueue(downloadId) ?: return; queueManager.getQueue(qid).move(listOf(downloadId), direction) }
 
     override suspend fun addDownload(task: NewDownloadTask): Long {
+        require(task.downloadSource.link.isNotBlank())
         val addDownloaderInUiProps = convertToDownloadSystemCredentials(task.downloadSource)
         val downloaderInUi = downloaderInUiRegistry.getDownloaderOf(
             addDownloaderInUiProps.credentials
@@ -290,8 +291,8 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
         val downloadItem = downloaderInUi.createBareDownloadItem(
             addDownloaderInUiProps.credentials,
             basicDownloadItem = BasicDownloadItem(
-                folder = task.folder ?: appSettings.saveLocation.value,
-                name = task.name ?: addDownloaderInUiProps.extraConfig.suggestedName
+                folder = task.folder?.takeIf { it.isNotBlank() } ?: appSettings.saveLocation.value,
+                name = task.name?.takeIf { it.isNotBlank() } ?: addDownloaderInUiProps.extraConfig.suggestedName
                 ?: task.downloadSource.link.substringAfterLast("/"),
             ),
         )
