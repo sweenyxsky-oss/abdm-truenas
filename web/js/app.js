@@ -146,7 +146,6 @@ function renderScheduler(){
       <span class="tag">${q.schedulerEnabled?"Enabled":"Disabled"}</span></div>
       <div style="padding:16px 18px">
         <div class="form-grid">
-          <label style="display:flex;align-items:center;gap:9px"><input type="checkbox" id="sched-enabled-${q.id}" ${q.schedulerEnabled?"checked":""}> Enable scheduler</label>
           <label>Start time<input type="time" id="sched-start-${q.id}" value="${start}"></label>
           <label>Stop time<input type="time" id="sched-end-${q.id}" value="${end}"></label>
         </div>
@@ -169,12 +168,12 @@ function renderScheduler(){
 window.saveQueueSchedule=async function(id){
   const activeDays=Array.from(document.querySelectorAll(".sched-day-"+id+":checked")).map(x=>x.value);
   if(!activeDays.length){alert("Select at least one active day.");return}
-  const enabled=document.getElementById("sched-enabled-"+id).checked;
   const autoStartEnabled=document.getElementById("sched-autostart-"+id).checked;
   const autoStopEnabled=document.getElementById("sched-autostop-"+id).checked;
   const stopQueueOnEmpty=document.getElementById("sched-empty-"+id).checked;
   const startTime=document.getElementById("sched-start-"+id).value||"02:30";
   const endTime=document.getElementById("sched-end-"+id).value||"07:30";
+  const enabled=autoStartEnabled||autoStopEnabled;
   try{await ABDM_API.queueSchedule(id,{enabled,activeDays,autoStartEnabled,startTime,autoStopEnabled,endTime,stopQueueOnEmpty});await loadQueues(false)}catch(e){alert("Scheduler update failed: "+e.message)}
 };
 
