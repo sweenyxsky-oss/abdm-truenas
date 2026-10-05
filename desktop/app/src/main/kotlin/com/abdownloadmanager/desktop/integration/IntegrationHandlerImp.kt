@@ -10,6 +10,7 @@ import com.abdownloadmanager.shared.pages.adddownload.AddDownloadCredentialsInUi
 import com.abdownloadmanager.shared.pages.adddownload.ImportOptions
 import com.abdownloadmanager.shared.pages.adddownload.SilentImportOptions
 import com.abdownloadmanager.shared.util.DownloadSystem
+import com.abdownloadmanager.shared.util.ApiKeyUtil
 import com.abdownloadmanager.shared.util.category.Category
 import com.abdownloadmanager.shared.util.category.CategoryManager
 import ir.amirab.downloader.NewDownloadItemProps
@@ -53,6 +54,55 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
                 } else null
             )
         )
+    }
+
+    override fun getSettings(): ApiSettingsModel = ApiSettingsModel(
+        downloadFolder = appSettings.saveLocation.value,
+        maxConcurrentDownloads = appSettings.maxConcurrentDownloads.value,
+        threadCount = appSettings.threadCount.value,
+        speedLimit = appSettings.speedLimiter.value,
+        maxDownloadRetryCount = appSettings.maxDownloadRetryCount.value,
+        dynamicPartCreation = appSettings.dynamicPartCreation.value,
+        sparseFileAllocation = appSettings.useSparseFileAllocation.value,
+        useAverageSpeed = appSettings.useAverageSpeed.value,
+        autoStartOnBoot = appSettings.appSettings.autoStartOnBoot.value,
+        useCategoryByDefault = appSettings.appSettings.useCategoryByDefault.value,
+        apiEnabled = appSettings.apiEnabled.value,
+        apiPort = appSettings.apiPort.value,
+        apiAuthEnabled = appSettings.apiAuthEnabled.value,
+        trackDeletedFilesOnDisk = appSettings.trackDeletedFilesOnDisk.value,
+        deletePartialFileOnDownloadCancellation = appSettings.appSettings.deletePartialFileOnDownloadCancellation.value,
+    )
+
+    override suspend fun updateSettings(settings: ApiSettingsModel, apiKey: String?) {
+        require(settings.downloadFolder.isNotBlank())
+        require(settings.maxConcurrentDownloads in 1..128)
+        require(settings.threadCount in 1..128)
+        require(settings.speedLimit >= 0)
+        require(settings.maxDownloadRetryCount in 0..100)
+        require(settings.apiPort in 1..65535)
+        if (settings.apiAuthEnabled) {
+            require(!apiKey.isNullOrBlank() && ApiKeyUtil.isValidKey(apiKey)) { "A valid API key is required when API authentication is enabled" }
+            appSettings.apiAuthKey.value = apiKey
+        } else if (!apiKey.isNullOrBlank()) {
+            require(ApiKeyUtil.isValidKey(apiKey)) { "Invalid API key" }
+            appSettings.apiAuthKey.value = apiKey
+        }
+        appSettings.saveLocation.value = settings.downloadFolder
+        appSettings.maxConcurrentDownloads.value = settings.maxConcurrentDownloads
+        appSettings.threadCount.value = settings.threadCount
+        appSettings.speedLimiter.value = settings.speedLimit
+        appSettings.maxDownloadRetryCount.value = settings.maxDownloadRetryCount
+        appSettings.dynamicPartCreation.value = settings.dynamicPartCreation
+        appSettings.useSparseFileAllocation.value = settings.sparseFileAllocation
+        appSettings.useAverageSpeed.value = settings.useAverageSpeed
+        appSettings.appSettings.autoStartOnBoot.value = settings.autoStartOnBoot
+        appSettings.appSettings.useCategoryByDefault.value = settings.useCategoryByDefault
+        appSettings.apiPort.value = settings.apiPort
+        appSettings.apiAuthEnabled.value = settings.apiAuthEnabled
+        appSettings.trackDeletedFilesOnDisk.value = settings.trackDeletedFilesOnDisk
+        appSettings.appSettings.deletePartialFileOnDownloadCancellation.value = settings.deletePartialFileOnDownloadCancellation
+        appSettings.apiEnabled.value = settings.apiEnabled
     }
 
     override fun listQueues(): List<ApiQueueModel> {
