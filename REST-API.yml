@@ -2,7 +2,7 @@ openapi: 3.0.0
 info:
   title: Download Service API
   version: 1.0.0
-  description: API for managing download tasks and queues.
+  description: API for managing downloads, queues, categories, schedules, browser access, and settings.
 servers:
   - url: http://localhost:15151
     description: Default server running on port 15151
@@ -100,3 +100,81 @@ paths:
               schema:
                 type: string
                 description: OK on success
+
+
+  /ping:
+    post:
+      summary: Check whether the ABDM backend is alive
+  /downloads:
+    get:
+      summary: List downloads
+  /downloads/{id}/pause:
+    post:
+      summary: Pause a download
+  /downloads/{id}/resume:
+    post:
+      summary: Resume a download
+  /downloads/{id}/retry:
+    post:
+      summary: Reset and retry a download
+  /downloads/{id}/remove:
+    post:
+      summary: Remove a download
+      parameters:
+        - name: removeFile
+          in: query
+          required: false
+          schema:
+            type: boolean
+  /downloads/{id}/queue:
+    post:
+      summary: Assign a download to a queue
+  /downloads/{id}/unqueue:
+    post:
+      summary: Remove a download from its queue
+  /downloads/{id}/move:
+    post:
+      summary: Move a queued download
+  /queues/{id}/start:
+    post:
+      summary: Start a queue
+  /queues/{id}/stop:
+    post:
+      summary: Stop a queue
+  /queues/{id}/delete:
+    post:
+      summary: Delete a queue
+  /queues/{id}/rename:
+    post:
+      summary: Rename a queue
+  /queues/{id}/concurrency:
+    post:
+      summary: Set queue concurrency
+  /queues/{id}/schedule:
+    post:
+      summary: Configure queue scheduler
+  /browser:
+    get:
+      summary: Browse the configured download folder
+      parameters:
+        - name: path
+          in: query
+          required: false
+          schema:
+            type: string
+  /categories:
+    get:
+      summary: List categories
+    post:
+      summary: Create a category
+  /categories/{id}/rename:
+    post:
+      summary: Rename a category
+  /categories/{id}/delete:
+    post:
+      summary: Delete a custom category
+  /settings:
+    get:
+      summary: Read ABDM service settings
+    post:
+      summary: Update ABDM service settings
