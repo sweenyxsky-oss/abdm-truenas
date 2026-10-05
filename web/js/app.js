@@ -1,4 +1,4 @@
-const state={page:"dashboard",pageSize:10,page:1,downloads:[],allDownloads:[],queues:[],connected:false,query:"",browserPath:"",browserItems:[],categories:[],settings:null};
+const state={view:"dashboard",page:1,pageSize:10,downloads:[],allDownloads:[],queues:[],connected:false,query:"",browserPath:"",browserItems:[],categories:[],settings:null};
 state.downloads=[];
 
 const titles={dashboard:["Dashboard","Download manager overview"],downloads:["Downloads","All download tasks"],queue:["Queue","Manage download queues"],browser:["Browser","Repository and file browser"],categories:["Categories","Organize downloads"],scheduler:["Scheduler","Scheduled download rules"],settings:["Settings","ABDM service configuration"]};
@@ -129,7 +129,7 @@ window.saveSettings=async function(){
 };
 async function loadSettings(quiet=true){
   if(!state.connected)return;
-  try{state.settings=await ABDM_API.settings();if(state.page==="settings"&&!quiet)render()}catch(e){console.warn("Unable to load settings",e)}
+  try{state.settings=await ABDM_API.settings();if(state.view==="settings"&&!quiet)render()}catch(e){console.warn("Unable to load settings",e)}
 }
 
 function renderScheduler(){
@@ -181,11 +181,11 @@ function renderSimple(name,text){return `<div class="card empty"><strong>${name}
 window.createCategory=async function(){const name=prompt("Category name","New Category");if(!name)return;const path=prompt("Download path","/downloads/"+name.replace(/\\s+/g,"_"));if(path===null)return;try{await ABDM_API.createCategory({name,path,usePath:true,fileTypes:[],urlPatterns:[]});await loadCategories(false)}catch(e){alert("Category creation failed: "+e.message)}};
 window.renameCategory=async function(id,name){const n=prompt("Category name",name);if(!n||n===name)return;try{await ABDM_API.renameCategory(id,n);await loadCategories(false)}catch(e){alert("Rename failed: "+e.message)}};
 window.deleteCategory=async function(id,name){if(!confirm("Delete category '"+name+"'?"))return;try{await ABDM_API.deleteCategory(id);await loadCategories(false)}catch(e){alert("Delete failed: "+e.message)}};
-async function loadCategories(quiet=true){if(!state.connected)return;try{const items=await ABDM_API.categories();state.categories=Array.isArray(items)?items:[];refreshCategorySelect();if(state.page==="categories"&&!quiet)render()}catch(e){console.warn("Unable to load categories",e)}}
+async function loadCategories(quiet=true){if(!state.connected)return;try{const items=await ABDM_API.categories();state.categories=Array.isArray(items)?items:[];refreshCategorySelect();if(state.view==="categories"&&!quiet)render()}catch(e){console.warn("Unable to load categories",e)}}
 
 window.browseTo=async function(path){try{const data=await ABDM_API.browser(path);state.browserPath=data.path||"";state.browserItems=Array.isArray(data.items)?data.items:[];state.page=1;render()}catch(e){alert("Browser error: "+e.message)}};
 window.browseParent=async function(){const p=state.browserPath.split("/").filter(Boolean);p.pop();await browseTo(p.join("/"))};
-function render(){document.getElementById("page-title").textContent=titles[state.page][0];document.getElementById("page-subtitle").textContent=titles[state.page][1];document.querySelectorAll(".nav-item").forEach(x=>x.classList.toggle("active",x.dataset.page===state.page));let html=state.page==="dashboard"?renderDashboard():state.page==="downloads"?renderDownloads():state.page==="queue"?renderQueue():state.page==="browser"?renderBrowser():state.page==="categories"?renderCategories():state.page==="scheduler"?renderScheduler():state.page==="settings"?renderSettings():renderSimple("Page","Coming soon.");document.getElementById("app").innerHTML=html}
+function render(){document.getElementById("page-title").textContent=titles[state.page][0];document.getElementById("page-subtitle").textContent=titles[state.page][1];document.querySelectorAll(".nav-item").forEach(x=>x.classList.toggle("active",x.dataset.page===state.page));let html=state.view==="dashboard"?renderDashboard():state.view==="downloads"?renderDownloads():state.view==="queue"?renderQueue():state.view==="browser"?renderBrowser():state.view==="categories"?renderCategories():state.view==="scheduler"?renderScheduler():state.view==="settings"?renderSettings():renderSimple("Page","Coming soon.");document.getElementById("app").innerHTML=html}
 window.setPage=n=>{state.page=Number(n);render()};window.setSize=n=>{state.pageSize=Number(n);state.page=1;render()};window.showDownload=function(id){
   const d=state.allDownloads.find(x=>Number(x.id)===Number(id));
   if(!d)return;
@@ -231,7 +231,7 @@ async function loadQueues(quiet=true){
     const items=await ABDM_API.queues();
     state.queues=Array.isArray(items)?items:[];refreshQueueSelect();
     if(state.page>Math.max(1,Math.ceil(state.queues.length/state.pageSize)))state.page=1;
-    if(!quiet||state.page==="dashboard"||state.page==="queue"||state.page==="scheduler")render();
+    if(!quiet||state.view==="dashboard"||state.view==="queue"||state.view==="scheduler")render();
   }catch(err){console.warn("Unable to load queues",err)}
 }
 async function loadDownloads(quiet=true){
@@ -240,8 +240,8 @@ async function loadDownloads(quiet=true){
     const items=await ABDM_API.downloads();
     state.allDownloads=(Array.isArray(items)?items:[]).map(x=>({id:x.id,name:x.name,size:formatBytes(x.size),progress:x.percent==null?0:x.percent,speed:formatSpeed(x.speed),eta:formatEta(x.eta),status:x.status,queueId:x.queueId,queueName:x.queueName,raw:x}));
     state.downloads=state.query?state.allDownloads.filter(x=>x.name.toLowerCase().includes(state.query)):state.allDownloads.slice();
-    const editingSearch=state.page==="downloads"&&document.activeElement?.classList.contains("search");
-    if(!quiet||state.page==="dashboard"||state.page==="queue"||(state.page==="downloads"&&!editingSearch))render();
+    const editingSearch=state.view==="downloads"&&document.activeElement?.classList.contains("search");
+    if(!quiet||state.view==="dashboard"||state.view==="queue"||(state.view==="downloads"&&!editingSearch))render();
   }catch(err){console.warn("Unable to load downloads",err)}
 }
 function formatBytes(value){
@@ -260,10 +260,10 @@ function formatEta(value){
   if(m)return m+"m "+s+"s";
   return s+"s";
 }
-document.getElementById("nav").addEventListener("click",e=>{const b=e.target.closest(".nav-item");if(b){state.page=b.dataset.page;state.page=1;render();if(state.page==="browser")browseTo(state.browserPath)}}});
+document.getElementById("nav").addEventListener("click",e=>{const b=e.target.closest(".nav-item");if(b){state.page=b.dataset.page;state.page=1;render();if(state.view==="browser")browseTo(state.browserPath)}}});
 
 document.getElementById("addBtn").onclick=async()=>{await loadQueues(true);await loadCategories(true);refreshQueueSelect();refreshCategorySelect();if(state.settings?.downloadFolder)document.getElementById("pathInput").value=state.settings.downloadFolder;document.getElementById("addDialog").showModal()};
 document.getElementById("addForm").addEventListener("submit",async e=>{e.preventDefault();const urls=document.getElementById("urlInput").value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);if(!urls.length)return;try{await ABDM_API.add({urls,folder:document.getElementById("pathInput").value,queueId:(document.getElementById("queueInput").value===""?null:Number(document.getElementById("queueInput").value)),categoryId:(document.getElementById("categoryInput").value===""?null:Number(document.getElementById("categoryInput").value))});await loadDownloads(false);document.getElementById("addDialog").close();}catch(err){alert("Backend API error: "+err.message)}});
 async function connect(){try{await ABDM_API.ping();state.connected=true;await loadDownloads(true);await loadQueues(true);await loadCategories(true);await loadSettings(true);document.querySelector(".status-dot").classList.add("ok");document.getElementById("connection").textContent="Backend connected"}catch(e){document.getElementById("connection").textContent="Demo mode"}render()}
 render();connect();
-setInterval(()=>{loadDownloads(true);loadQueues(true);if(state.page==="categories")loadCategories(true);if(state.page==="settings")loadSettings(true)},1500);
+setInterval(()=>{loadDownloads(true);loadQueues(true);if(state.view==="categories")loadCategories(true);if(state.view==="settings")loadSettings(true)},1500);
