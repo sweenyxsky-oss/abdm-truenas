@@ -7,6 +7,7 @@ import com.abdownloadmanager.desktop.utils.EntrypointInitializer
 import com.abdownloadmanager.integration.Integration
 import com.abdownloadmanager.integration.IntegrationSettings
 import com.abdownloadmanager.shared.util.DownloadSystem
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -49,10 +50,10 @@ object HeadlessApp : KoinComponent {
             val apiKey = System.getenv("ABDM_API_KEY")?.takeIf { it.isNotBlank() }
             integration.enable(IntegrationSettings(port = port, apiKey = apiKey))
 
-                // Keep the download monitor hot so the web API always sees live state.
-                launch {
-                    downloadSystem.downloadMonitor.downloadListFlow.collect { }
-                }
+            // Keep the download monitor hot so the web API always sees live state.
+            launch {
+                downloadSystem.downloadMonitor.downloadListFlow.collect { }
+            }
 
             // Keep the JVM alive while Ktor/download coroutines run.
             kotlinx.coroutines.awaitCancellation()
