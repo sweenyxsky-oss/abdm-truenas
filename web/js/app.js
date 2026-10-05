@@ -1,5 +1,4 @@
 const state={page:"dashboard",pageSize:10,page:1,downloads:[],allDownloads:[],queues:[],connected:false,query:""};
-const sample=[{name:"Ubuntu.iso",size:"4.7 GB",progress:82,speed:"18.4 MB/s",eta:"1m 32s",status:"Downloading"},{name:"TrueNAS-25.10.7.iso",size:"1.9 GB",progress:100,speed:"—",eta:"Complete",status:"Completed"},{name:"LinuxMint.iso",size:"3.1 GB",progress:34,speed:"8.7 MB/s",eta:"4m 18s",status:"Downloading"},{name:"backup.zip",size:"12.4 GB",progress:0,speed:"—",eta:"Queued",status:"Queued"}];
 state.downloads=[];
 
 const titles={dashboard:["Dashboard","Download manager overview"],downloads:["Downloads","All download tasks"],queue:["Queue","Manage download queues"],browser:["Browser","Repository and file browser"],categories:["Categories","Organize downloads"],scheduler:["Scheduler","Scheduled download rules"],settings:["Settings","ABDM service configuration"]};
@@ -25,7 +24,10 @@ function renderDashboard(){
   const speed=state.allDownloads.reduce((n,x)=>n+Number(x.raw?.speed||0),0);
   return `<div class="grid stats"><div class="card"><div class="stat-label">Active downloads</div><div class="stat-value">${active}</div><div class="stat-extra">Currently transferring</div></div><div class="card"><div class="stat-label">Queued</div><div class="stat-value">${queued}</div><div class="stat-extra">Waiting to start</div></div><div class="card"><div class="stat-label">Completed</div><div class="stat-value">${done}</div><div class="stat-extra">Finished downloads</div></div><div class="card"><div class="stat-label">Current speed</div><div class="stat-value">${formatSpeed(speed)}</div><div class="stat-extra">Combined active speed</div></div></div><div class="grid two-col"><div><div class="section-head"><h2>Latest downloads</h2><span>${state.connected?"Live":"Offline"}</span></div>${table(dp.items)}${pagination(state.downloads.length,dp.pages)}</div><div><div class="section-head"><h2>Queue</h2><span>Live overview</span></div><div class="card list">${state.queues.length?state.queues.slice(0,6).map(queueRow).join(""):`<div class="empty">No queues available.</div>`}</div></div></div>`;
 }
-function renderDownloads(){const p=paginate(state.downloads);return `<div class="toolbar"><input class="search grow" placeholder="Search downloads…" oninput="filterDownloads(this.value)"><button class="secondary">Pause all</button><button class="secondary">Resume all</button></div>${table(p.items)}${pagination(state.downloads.length,p.pages)}`}
+function renderDownloads(){
+  const p=paginate(state.downloads);
+  return `<div class="toolbar"><input class="search grow" placeholder="Search downloads…" value="${esc(state.query)}" oninput="filterDownloads(this.value)"><button class="secondary" onclick="bulkAction('pause')">Pause all</button><button class="secondary" onclick="bulkAction('resume')">Resume all</button></div>${table(p.items)}${pagination(state.downloads.length,p.pages)}`;
+}
 function queueRow(q){return `<div class="row"><div><strong>${esc(q.name)}</strong><small>${q.active} active · ${q.queued} queued · ${q.total} total</small></div><span class="tag">${q.running?"Running":"Stopped"}</span></div>`;}
 function renderQueue(){
   const p=paginate(state.queues);
@@ -39,6 +41,10 @@ window.setPage=n=>{state.page=Number(n);render()};window.setSize=n=>{state.pageS
   try{await ABDM_API.control(id,action,removeFile);await loadDownloads(false)}catch(e){alert("Action failed: "+e.message)}
 };
 window.filterDownloads=q=>{state.query=(q||"").toLowerCase();state.downloads=state.query?state.allDownloads.filter(x=>x.name.toLowerCase().includes(state.query)):state.allDownloads.slice();state.page=1;render()};
+window.bulkAction=async function(action){
+  const ids=state.allDownloads.filter(x=>action==="pause"?["Downloading","Preparing","Retrying"].includes(x.status):["Paused","Queued"].includes(x.status)).map(x=>x.id);
+  try{await Promise.all(ids.map(id=>ABDM_API.control(id,action)));await loadDownloads(false)}catch(e){alert("Bulk action failed: "+e.message)}
+};
 window.queueAction=async function(id,action){
   try{await ABDM_API.queueControl(id,action);await loadQueues(false)}catch(e){alert("Queue action failed: "+e.message)}
 };
