@@ -83,7 +83,7 @@ class Integration(
         val server = embeddedServer(
             factory = CIO,
             port = settings.port,
-            host = "127.0.0.1",
+            host = settings.host,
         ) {
             setupRouting(json, integrationHandler, settings)
         }
