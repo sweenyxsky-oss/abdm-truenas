@@ -2,7 +2,8 @@ window.ABDM_API={baseUrl:(window.ABDM_CONFIG&&window.ABDM_CONFIG.apiBaseUrl)||""
 window.ABDM_API.request=async function(path,options={},retry=true){
   const apiKey=localStorage.getItem("abdmApiKey");
   const r=await fetch(this.baseUrl.replace(/\/$/,"")+path,{...options,headers:{"Content-Type":"application/json",...(apiKey?{"X-API-Key":apiKey}:{}),...(options.headers||{})}});
-  if(r.status===401&&retry){
+  if(r.status===401&&retry&&!sessionStorage.getItem("abdmApiPrompted")){
+    sessionStorage.setItem("abdmApiPrompted","1");
     const entered=prompt("ABDM API key:");
     if(entered&&entered.trim()){
       localStorage.setItem("abdmApiKey",entered.trim());
