@@ -10,4 +10,5 @@ data class ApiQueueModel(
     val queued: Int,
     val total: Int,
     val running: Boolean,
+    val maxConcurrent: Int,
 )
