@@ -124,6 +124,7 @@ window.saveSettings=async function(){
     apiAuthEnabled:document.getElementById("set-api-auth").checked
   };
   const key=document.getElementById("set-key").value.trim();
+  if(key)localStorage.setItem("abdmApiKey",key);
   try{await ABDM_API.updateSettings(s,key||null);state.settings=s;alert("Settings saved.");render()}catch(e){alert("Settings update failed: "+e.message)}
 };
 async function loadSettings(quiet=true){
