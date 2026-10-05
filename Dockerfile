@@ -14,9 +14,10 @@ ENV HOME=/config \
 RUN apt-get update && apt-get install -y --no-install-recommends libx11-6 libxext6 libxrender1 libxtst6 libxi6 libgl1 libfontconfig1 libfreetype6 libasound2 && rm -rf /var/lib/apt/lists/*
 WORKDIR /opt/abdm
 COPY --from=build /src/desktop/app/build/compose/binaries/main-release/app/ABDownloadManager /opt/abdm
-RUN printf "/config\n" > /opt/abdm/.portable && mkdir -p /config /downloads /temp && useradd --system --uid 568 --home /config --shell /usr/sbin/nologin abdm && \
+COPY docker-entrypoint.sh /opt/abdm/docker-entrypoint.sh
+RUN printf "/config\n" > /opt/abdm/.portable && mkdir -p /config /downloads /temp && chmod +x /opt/abdm/docker-entrypoint.sh && useradd --system --uid 568 --home /config --shell /usr/sbin/nologin abdm && \
     chown -R abdm:abdm /opt/abdm /config /downloads /temp
 USER abdm
 EXPOSE 15151
 VOLUME ["/config", "/downloads", "/temp"]
-ENTRYPOINT ["/opt/abdm/bin/ABDMHeadless"]
+ENTRYPOINT ["/opt/abdm/docker-entrypoint.sh"]
