@@ -187,7 +187,25 @@ window.browseTo=async function(path){try{const data=await ABDM_API.browser(path)
 window.browseParent=async function(){const p=state.browserPath.split("/").filter(Boolean);p.pop();await browseTo(p.join("/"))};
 function render(){document.getElementById("page-title").textContent=titles[state.page][0];document.getElementById("page-subtitle").textContent=titles[state.page][1];document.querySelectorAll(".nav-item").forEach(x=>x.classList.toggle("active",x.dataset.page===state.page));let html=state.page==="dashboard"?renderDashboard():state.page==="downloads"?renderDownloads():state.page==="queue"?renderQueue():state.page==="browser"?renderBrowser():state.page==="categories"?renderCategories():state.page==="scheduler"?renderScheduler():state.page==="settings"?renderSettings():renderSimple("Page","Coming soon.");document.getElementById("app").innerHTML=html}
 function settings(){return `<div class="settings-grid"><div class="card"><div class="section-head"><h2>Backend API</h2></div><div class="form-grid"><label>API base URL<input value="${esc(window.ABDM_API.baseUrl)}" readonly></label><label>Connection status<input value="${state.connected?"Connected":"Not connected"}" readonly></label></div></div><div class="card"><div class="section-head"><h2>Storage</h2></div><div class="form-grid"><label>Downloads path<input value="/mnt/dataPool/abdm/downloads"></label><label>Temporary path<input value="/mnt/dataPool/abdm/temp"></label></div></div></div>`}
-window.setPage=n=>{state.page=Number(n);render()};window.setSize=n=>{state.pageSize=Number(n);state.page=1;render()};window.downloadAction=async function(id,action,removeFile=false){
+window.setPage=n=>{state.page=Number(n);render()};window.setSize=n=>{state.pageSize=Number(n);state.page=1;render()};window.showDownload=function(id){
+  const d=state.allDownloads.find(x=>Number(x.id)===Number(id));
+  if(!d)return;
+  const r=d.raw||d;
+  document.getElementById("detailsTitle").textContent=d.name;
+  document.getElementById("detailsSubtitle").textContent=d.status+" · "+(d.queueName||"No queue");
+  document.getElementById("detailsBody").innerHTML=`<div class="details-grid">
+    <div><span>Progress</span><strong>${d.progress}%</strong></div>
+    <div><span>Speed</span><strong>${esc(d.speed)}</strong></div>
+    <div><span>ETA</span><strong>${esc(d.eta)}</strong></div>
+    <div><span>Size</span><strong>${esc(d.size)}</strong></div>
+    <div><span>Folder</span><strong>${esc(r.folder||"—")}</strong></div>
+    <div><span>Queue</span><strong>${esc(d.queueName||"No queue")}</strong></div>
+    <div><span>Added</span><strong>${r.dateAdded?new Date(r.dateAdded).toLocaleString():"—"}</strong></div>
+    <div><span>Completed</span><strong>${r.completeTime?new Date(r.completeTime).toLocaleString():"—"}</strong></div>
+  </div>`;
+  document.getElementById("detailsDialog").showModal();
+};
+window.downloadAction=async function(id,action,removeFile=false){
   if(action==="remove"&&!confirm(removeFile?"Remove the download and delete its file?":"Remove this download from ABDM?"))return;
   try{await ABDM_API.control(id,action,removeFile);await loadDownloads(false)}catch(e){alert("Action failed: "+e.message)}
 };
