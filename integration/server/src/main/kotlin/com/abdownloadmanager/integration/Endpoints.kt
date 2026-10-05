@@ -68,6 +68,7 @@ internal fun Application.setupRouting(
                 val jsonResponse = json.encodeToString(ListSerializer(ApiQueueModel.serializer()), queues)
                 call.respondText(jsonResponse)
             }
+            post("/queues") { val body=json.decodeFromString<Map<String,String>>(call.receiveText()); call.respondText(integrationHandler.addQueue(body["name"] ?: "New Queue").toString()) }
             route("/queues/{id}") {
                 post("/start") {
                     integrationHandler.startQueue(call.parameters["id"]!!.toLong())
@@ -77,6 +78,9 @@ internal fun Application.setupRouting(
                     integrationHandler.stopQueue(call.parameters["id"]!!.toLong())
                     call.respondText("OK")
                 }
+                post("/delete") { integrationHandler.deleteQueue(call.parameters["id"]!!.toLong()); call.respondText("OK") }
+                post("/rename") { val body=json.decodeFromString<Map<String,String>>(call.receiveText()); integrationHandler.renameQueue(call.parameters["id"]!!.toLong(), body["name"] ?: "Queue"); call.respondText("OK") }
+                post("/concurrency") { val body=json.decodeFromString<Map<String,Int>>(call.receiveText()); integrationHandler.setQueueConcurrency(call.parameters["id"]!!.toLong(), body["maxConcurrent"] ?: 1); call.respondText("OK") }
             }
             route("/downloads/{id}") {
                 post("/pause") {
@@ -91,6 +95,8 @@ internal fun Application.setupRouting(
                     integrationHandler.retryDownload(call.parameters["id"]!!.toLong())
                     call.respondText("OK")
                 }
+                post("/queue") { val body=json.decodeFromString<Map<String,Long>>(call.receiveText()); integrationHandler.assignDownloadToQueue(call.parameters["id"]!!.toLong(), body["queueId"] ?: 0L); call.respondText("OK") }
+                post("/move") { val body=json.decodeFromString<Map<String,Int>>(call.receiveText()); integrationHandler.moveQueueItem(call.parameters["id"]!!.toLong(), body["direction"] ?: 0); call.respondText("OK") }
                 post("/remove") {
                     val removeFile = call.request.queryParameters["removeFile"]?.toBoolean() ?: false
                     integrationHandler.removeDownload(call.parameters["id"]!!.toLong(), removeFile)
