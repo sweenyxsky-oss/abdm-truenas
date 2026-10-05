@@ -5,7 +5,7 @@ import com.abdownloadmanager.desktop.repository.AppRepository
 import com.abdownloadmanager.desktop.utils.EntryType
 import com.abdownloadmanager.desktop.utils.EntrypointInitializer
 import com.abdownloadmanager.integration.Integration
-import com.abdownloadmanager.integration.IntegrationSettings
+import com.abdownloadmanager.shared.util.ApiKeyUtil
 import com.abdownloadmanager.shared.util.DownloadSystem
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -34,21 +34,33 @@ object HeadlessApp : KoinComponent {
             Di.boot()
 
             // Load persisted application settings and start the real downloader.
-            val containerDownloadFolder = System.getenv("ABDM_DOWNLOAD_FOLDER")?.takeIf { it.isNotBlank() }
-            val initMarker = java.io.File(System.getProperty("user.home"), ".abdm-truenas-initialized")
-            if (containerDownloadFolder != null && !initMarker.exists()) {
-                appRepository.saveLocation.value = containerDownloadFolder
-                initMarker.parentFile?.mkdirs()
-                initMarker.writeText("initialized")
-            }
-
             appRepository.boot()
             integration.boot()
             downloadSystem.boot()
 
-            val port = System.getenv("ABDM_API_PORT")?.toIntOrNull() ?: 15151
-            val apiKey = System.getenv("ABDM_API_KEY")?.takeIf { it.isNotBlank() }
-            integration.enable(IntegrationSettings(port = port, apiKey = apiKey))
+            // First-run container defaults are written into ABDM's persistent settings.
+            // AppRepository owns the Integration lifecycle, so do not call integration.enable()
+            // directly here; otherwise persisted API settings can race with the container defaults.
+            val containerDownloadFolder = System.getenv("ABDM_DOWNLOAD_FOLDER")?.takeIf { it.isNotBlank() }
+            val containerApiPort = System.getenv("ABDM_API_PORT")?.toIntOrNull()?.takeIf { it in 1..65535 }
+            val containerApiKey = System.getenv("ABDM_API_KEY")?.takeIf { it.isNotBlank() }
+            val initMarker = java.io.File(System.getProperty("user.home"), ".abdm-truenas-initialized")
+            if (!initMarker.exists()) {
+                containerDownloadFolder?.let { appRepository.saveLocation.value = it }
+                containerApiPort?.let { appRepository.apiPort.value = it }
+                appRepository.apiEnabled.value = true
+
+                if (containerApiKey != null) {
+                    require(ApiKeyUtil.isValidKey(containerApiKey)) {
+                        "ABDM_API_KEY is not a valid ABDM API key"
+                    }
+                    appRepository.apiAuthKey.value = containerApiKey
+                    appRepository.apiAuthEnabled.value = true
+                }
+
+                initMarker.parentFile?.mkdirs()
+                initMarker.writeText("initialized")
+            }
 
             // Keep the download monitor hot so the web API always sees live state.
             launch {
