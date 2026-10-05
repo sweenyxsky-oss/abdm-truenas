@@ -29,3 +29,8 @@ window.ABDM_API.moveQueueItem=async function(id,direction){return this.request("
 window.ABDM_API.unqueue=async function(id){return this.request("/downloads/"+encodeURIComponent(id)+"/unqueue",{method:"POST"})};
 
 window.ABDM_API.browser=async function(path){return this.request("/browser"+(path?("?path="+encodeURIComponent(path)):""))};
+
+window.ABDM_API.categories=async function(){return this.request("/categories")};
+window.ABDM_API.createCategory=async function(data){return this.request("/categories",{method:"POST",body:JSON.stringify(data)})};
+window.ABDM_API.renameCategory=async function(id,name){return this.request("/categories/"+encodeURIComponent(id)+"/rename",{method:"POST",body:JSON.stringify({name})})};
+window.ABDM_API.deleteCategory=async function(id){return this.request("/categories/"+encodeURIComponent(id)+"/delete",{method:"POST"})};
