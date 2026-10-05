@@ -121,6 +121,13 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
 
     override fun stopQueue(id: Long) { queueManager.getQueue(id).stop() }
 
+    override suspend fun addQueue(name: String): Long { queueManager.addQueue(name); return queueManager.getAll().maxOf { it.id } }
+    override suspend fun deleteQueue(id: Long) { queueManager.deleteQueue(id) }
+    override suspend fun renameQueue(id: Long, name: String) { queueManager.getQueue(id).setName(name) }
+    override suspend fun setQueueConcurrency(id: Long, maxConcurrent: Int) { require(maxConcurrent > 0); queueManager.getQueue(id).setMaxConcurrent(maxConcurrent) }
+    override suspend fun assignDownloadToQueue(downloadId: Long, queueId: Long) { queueManager.addToQueue(queueId, downloadId) }
+    override suspend fun moveQueueItem(downloadId: Long, direction: Int) { val qid = queueManager.findItemInQueue(downloadId) ?: return; queueManager.getQueue(qid).move(listOf(downloadId), direction) }
+
     override suspend fun addDownload(task: NewDownloadTask): Long {
         val addDownloaderInUiProps = convertToDownloadSystemCredentials(task.downloadSource)
         val downloaderInUi = downloaderInUiRegistry.getDownloaderOf(
