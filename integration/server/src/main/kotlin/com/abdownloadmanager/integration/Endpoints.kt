@@ -22,6 +22,8 @@ import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonPrimitive
 
 private data class AppPrincipal(val key: String)
 
@@ -87,8 +89,8 @@ internal fun Application.setupRouting(
                 val name=body["name"]?.toString()?.trim('"') ?: "New Category"
                 val path=body["path"]?.toString()?.trim('"') ?: ""
                 val usePath=body["usePath"]?.toString()?.toBooleanStrictOrNull() ?: true
-                val fileTypes=body["fileTypes"]?.let { json.decodeFromJsonElement<List<String>>(it) } ?: emptyList()
-                val urlPatterns=body["urlPatterns"]?.let { json.decodeFromJsonElement<List<String>>(it) } ?: emptyList()
+                val fileTypes=body["fileTypes"]?.jsonArray?.map { it.jsonPrimitive.content } ?: emptyList()
+                val urlPatterns=body["urlPatterns"]?.jsonArray?.map { it.jsonPrimitive.content } ?: emptyList()
                 call.respondText(integrationHandler.addCategory(name,path,usePath,fileTypes,urlPatterns).toString(), ContentType.Application.Json)
             }
             route("/categories/{id}") {
@@ -128,7 +130,7 @@ internal fun Application.setupRouting(
                     val body = json.decodeFromString<Map<String, kotlinx.serialization.json.JsonElement>>(call.receiveText())
                     val id = call.parameters["id"]!!.toLong()
                     val enabled = body["enabled"]?.toString()?.toBooleanStrictOrNull() ?: false
-                    val activeDays = body["activeDays"]?.let { json.decodeFromJsonElement<List<String>>(it) } ?: emptyList()
+                    val activeDays = body["activeDays"]?.jsonArray?.map { it.jsonPrimitive.content } ?: emptyList()
                     val autoStartEnabled = body["autoStartEnabled"]?.toString()?.toBooleanStrictOrNull() ?: false
                     val startTime = body["startTime"]?.toString()?.trim('"') ?: "02:30"
                     val autoStopEnabled = body["autoStopEnabled"]?.toString()?.toBooleanStrictOrNull() ?: false
