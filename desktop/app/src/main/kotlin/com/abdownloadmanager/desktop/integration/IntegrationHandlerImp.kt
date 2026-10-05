@@ -84,8 +84,12 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
         require(settings.maxDownloadRetryCount in 0..100)
         require(settings.apiPort in 1..65535)
         if (settings.apiAuthEnabled) {
-            require(!apiKey.isNullOrBlank() && ApiKeyUtil.isValidKey(apiKey)) { "A valid API key is required when API authentication is enabled" }
-            appSettings.apiAuthKey.value = apiKey
+            if (!apiKey.isNullOrBlank()) {
+                require(ApiKeyUtil.isValidKey(apiKey)) { "Invalid API key" }
+                appSettings.apiAuthKey.value = apiKey
+            } else {
+                require(ApiKeyUtil.isValidKey(appSettings.apiAuthKey.value)) { "A valid API key is required when API authentication is enabled" }
+            }
         } else if (!apiKey.isNullOrBlank()) {
             require(ApiKeyUtil.isValidKey(apiKey)) { "Invalid API key" }
             appSettings.apiAuthKey.value = apiKey
