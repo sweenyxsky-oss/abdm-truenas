@@ -178,3 +178,55 @@ If you want to contribute to this project, please read [Contributing Guide](CONT
 ## Support the Project
 
 If you'd like to support the project, you can find details on how to donate in the [DONATE.md](DONATE.md) file.
+
+## TrueNAS SCALE Web/Headless Edition
+
+This branch adds a native headless runtime and a web interface designed for TrueNAS SCALE. The web UI is served directly by the ABDM Ktor service, so no desktop GUI, Xvfb, or noVNC is required.
+
+### Features
+
+- Live dashboard with download progress, speed, and ETA
+- Download pause, resume, retry, and removal
+- Queue creation, rename, ordering, concurrency, and start/stop controls
+- Per-queue scheduling with active days, start/stop times, and stop-when-empty
+- Categories
+- Repository/file browser rooted at the configured download directory
+- Settings for storage, concurrency, retry behavior, API, and download behavior
+- Pagination with 10 / 25 / 50 items across list pages
+- Same-origin web UI served from the ABDM container
+
+### TrueNAS storage layout
+
+Recommended datasets:
+
+```
+dataPool
+└── abdm
+    ├── config
+    ├── downloads
+    └── temp
+```
+
+The container expects these paths:
+
+- `/config` — persistent ABDM settings and application data
+- `/downloads` — completed and active downloads
+- `/temp` — temporary download data
+
+### Custom App deployment
+
+TrueNAS SCALE 25.10 supports installing custom applications from Docker Compose YAML. The ready-to-use example is:
+
+```
+docker-compose.truenas.yml
+```
+
+The default web/API port is **15151**. Open:
+
+```
+http://TRUENAS-IP:15151/
+```
+
+The container image is built by GitHub Actions and published to GHCR.
+
+> The repository's Docker image build is intended for the TrueNAS headless deployment. The regular desktop application remains available through the upstream desktop build configuration.
