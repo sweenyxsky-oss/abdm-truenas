@@ -38,6 +38,7 @@ interface IntegrationHandler{
         startTime: String,
         autoStopEnabled: Boolean,
         endTime: String,
+        stopQueueOnEmpty: Boolean,
     )
     suspend fun assignDownloadToQueue(downloadId: Long, queueId: Long)
     suspend fun removeDownloadFromQueue(downloadId: Long)
