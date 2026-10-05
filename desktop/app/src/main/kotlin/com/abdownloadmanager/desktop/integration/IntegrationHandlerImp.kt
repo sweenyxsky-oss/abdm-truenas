@@ -11,9 +11,12 @@ import com.abdownloadmanager.shared.pages.adddownload.ImportOptions
 import com.abdownloadmanager.shared.pages.adddownload.SilentImportOptions
 import com.abdownloadmanager.shared.util.DownloadSystem
 import ir.amirab.downloader.NewDownloadItemProps
+import ir.amirab.downloader.downloaditem.DownloadJobStatus
 import ir.amirab.downloader.downloaditem.EmptyContext
 import ir.amirab.downloader.downloaditem.hls.HLSDownloadCredentials
 import ir.amirab.downloader.downloaditem.http.HttpDownloadCredentials
+import ir.amirab.downloader.monitor.CompletedDownloadItemState
+import ir.amirab.downloader.monitor.ProcessingDownloadItemState
 import ir.amirab.downloader.queue.QueueManager
 import ir.amirab.downloader.utils.OnDuplicateStrategy
 import org.koin.core.component.KoinComponent
@@ -50,6 +53,38 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
             val queueModel = downloadQueue.getQueueModel()
             ApiQueueModel(id = queueModel.id, name = queueModel.name)
         }
+    }
+
+    override fun listDownloads(): List<ApiDownloadModel> {
+        return downloadSystem.downloadMonitor.downloadListFlow.value.map { item ->
+            when (item) {
+                is ProcessingDownloadItemState -> ApiDownloadModel(
+                    id = item.id, name = item.name, folder = item.folder,
+                    size = item.contentLength, progress = item.progress,
+                    percent = item.percent, speed = item.speed,
+                    eta = item.remainingTime,
+                    status = when (item.status) {
+                        is DownloadJobStatus.Downloading, is DownloadJobStatus.Resuming -> "Downloading"
+                        is DownloadJobStatus.PreparingFile -> "Preparing"
+                        is DownloadJobStatus.Retrying -> "Retrying"
+                        is DownloadJobStatus.Canceled -> "Paused"
+                        DownloadJobStatus.IDLE -> "Queued"
+                        DownloadJobStatus.Finished -> "Completed"
+                    },
+                    downloadLink = item.downloadLink,
+                    dateAdded = item.dateAdded, startTime = item.startTime,
+                    completeTime = item.completeTime,
+                )
+                is CompletedDownloadItemState -> ApiDownloadModel(
+                    id = item.id, name = item.name, folder = item.folder,
+                    size = item.contentLength, progress = item.contentLength,
+                    percent = 100, speed = 0, eta = 0,
+                    status = "Completed", downloadLink = item.downloadLink,
+                    dateAdded = item.dateAdded, startTime = item.startTime,
+                    completeTime = item.completeTime,
+                )
+            }
+        }.sortedByDescending { it.dateAdded }
     }
 
     override suspend fun addDownload(task: NewDownloadTask): Long {
