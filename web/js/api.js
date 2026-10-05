@@ -2,4 +2,4 @@ window.ABDM_API={baseUrl:(window.ABDM_CONFIG&&window.ABDM_CONFIG.apiBaseUrl)||"/
 window.ABDM_API.request=async function(path,options={}){const r=await fetch(this.baseUrl.replace(/\/$/,"")+path,{...options,headers:{"Content-Type":"application/json",...(options.headers||{})}});if(!r.ok)throw new Error(r.status+" "+r.statusText);const t=await r.text();return t?JSON.parse(t):null};
 window.ABDM_API.ping=async function(){return this.request("/ping",{method:"POST"})};
 window.ABDM_API.queues=async function(){return this.request("/queues")};
-window.ABDM_API.add=async function(payload){return this.request("/add",{method:"POST",body:JSON.stringify(payload)})};
+window.ABDM_API.add=async function(payload){const urls=payload.urls||[];return Promise.all(urls.map(link=>this.request("/start-headless-download",{method:"POST",body:JSON.stringify({downloadSource:{link:link},folder:payload.folder||null,startDownload:true,startQueue:false})})))};
