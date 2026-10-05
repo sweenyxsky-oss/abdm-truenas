@@ -1,6 +1,6 @@
-const state={page:"dashboard",pageSize:10,page:1,downloads:[],queues:[],connected:false};
+const state={page:"dashboard",pageSize:10,page:1,downloads:[],allDownloads:[],queues:[],connected:false,query:""};
 const sample=[{name:"Ubuntu.iso",size:"4.7 GB",progress:82,speed:"18.4 MB/s",eta:"1m 32s",status:"Downloading"},{name:"TrueNAS-25.10.7.iso",size:"1.9 GB",progress:100,speed:"—",eta:"Complete",status:"Completed"},{name:"LinuxMint.iso",size:"3.1 GB",progress:34,speed:"8.7 MB/s",eta:"4m 18s",status:"Downloading"},{name:"backup.zip",size:"12.4 GB",progress:0,speed:"—",eta:"Queued",status:"Queued"}];
-state.downloads=sample;
+state.downloads=[];
 
 const titles={dashboard:["Dashboard","Download manager overview"],downloads:["Downloads","All download tasks"],queue:["Queue","Manage download queues"],browser:["Browser","Repository and file browser"],categories:["Categories","Organize downloads"],scheduler:["Scheduler","Scheduled download rules"],settings:["Settings","ABDM service configuration"]};
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
@@ -13,9 +13,35 @@ function renderQueue(){const p=paginate([{name:"Default",active:2,queued:1,statu
 function renderSimple(name,text){return `<div class="card empty"><strong>${name}</strong>${text}</div>`}
 function render(){document.getElementById("page-title").textContent=titles[state.page][0];document.getElementById("page-subtitle").textContent=titles[state.page][1];document.querySelectorAll(".nav-item").forEach(x=>x.classList.toggle("active",x.dataset.page===state.page));let html=state.page==="dashboard"?renderDashboard():state.page==="downloads"?renderDownloads():state.page==="queue"?renderQueue():state.page==="browser"?renderSimple("Browser","Repository browsing will use the headless backend API."):state.page==="categories"?renderSimple("Categories","Create and manage download categories."):state.page==="scheduler"?renderSimple("Scheduler","Configure scheduled download rules."):settings();document.getElementById("app").innerHTML=html}
 function settings(){return `<div class="settings-grid"><div class="card"><div class="section-head"><h2>Backend API</h2></div><div class="form-grid"><label>API base URL<input value="${esc(window.ABDM_API.baseUrl)}" readonly></label><label>Connection status<input value="${state.connected?"Connected":"Not connected"}" readonly></label></div></div><div class="card"><div class="section-head"><h2>Storage</h2></div><div class="form-grid"><label>Downloads path<input value="/mnt/dataPool/abdm/downloads"></label><label>Temporary path<input value="/mnt/dataPool/abdm/temp"></label></div></div></div>`}
-window.setPage=n=>{state.page=Number(n);render()};window.setSize=n=>{state.pageSize=Number(n);state.page=1;render()};window.filterDownloads=q=>{const all=state.downloads;state.downloads=q?all.filter(x=>x.name.toLowerCase().includes(q.toLowerCase())):sample;state.page=1;render()};
+window.setPage=n=>{state.page=Number(n);render()};window.setSize=n=>{state.pageSize=Number(n);state.page=1;render()};window.filterDownloads=q=>{state.query=(q||"").toLowerCase();state.downloads=state.query?state.allDownloads.filter(x=>x.name.toLowerCase().includes(state.query)):state.allDownloads.slice();state.page=1;render()};
+async function loadDownloads(quiet=true){
+  if(!state.connected)return;
+  try{
+    const items=await ABDM_API.downloads();
+    state.allDownloads=(Array.isArray(items)?items:[]).map(x=>({id:x.id,name:x.name,size:formatBytes(x.size),progress:x.percent==null?0:x.percent,speed:formatSpeed(x.speed),eta:formatEta(x.eta),status:x.status,raw:x}));
+    state.downloads=state.query?state.allDownloads.filter(x=>x.name.toLowerCase().includes(state.query)):state.allDownloads.slice();
+    if(!quiet)render();
+  }catch(err){console.warn("Unable to load downloads",err)}
+}
+function formatBytes(value){
+  if(value==null||value<0)return "—";
+  const units=["B","KB","MB","GB","TB"];let n=Number(value),i=0;
+  while(n>=1024&&i<units.length-1){n/=1024;i++}
+  return (n>=100||i===0?n.toFixed(0):n.toFixed(1))+" "+units[i];
+}
+function formatSpeed(value){return value>0?formatBytes(value)+"/s":"—"}
+function formatEta(value){
+  if(value==null||value<0)return "—";
+  if(value===0)return "Complete";
+  let s=Math.floor(value),h=Math.floor(s/3600);s%=3600;
+  let m=Math.floor(s/60);s%=60;
+  if(h)return h+"h "+m+"m";
+  if(m)return m+"m "+s+"s";
+  return s+"s";
+}
 document.getElementById("nav").addEventListener("click",e=>{const b=e.target.closest(".nav-item");if(b){state.page=b.dataset.page;state.page=1;render()}});
 document.getElementById("addBtn").onclick=()=>document.getElementById("addDialog").showModal();
 document.getElementById("addForm").addEventListener("submit",async e=>{e.preventDefault();const urls=document.getElementById("urlInput").value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);if(!urls.length)return;try{await ABDM_API.add({urls,folder:document.getElementById("pathInput").value});document.getElementById("addDialog").close();}catch(err){alert("Backend API error: "+err.message)}});
-async function connect(){try{await ABDM_API.ping();state.connected=true;document.querySelector(".status-dot").classList.add("ok");document.getElementById("connection").textContent="Backend connected"}catch(e){document.getElementById("connection").textContent="Demo mode"}render()}
+async function connect(){try{await ABDM_API.ping();state.connected=true;await loadDownloads(true);document.querySelector(".status-dot").classList.add("ok");document.getElementById("connection").textContent="Backend connected"}catch(e){document.getElementById("connection").textContent="Demo mode"}render()}
 render();connect();
+setInterval(()=>loadDownloads(true),1500);
