@@ -97,7 +97,7 @@ function renderSettings(){
         <label>API key<input id="set-key" type="password" autocomplete="new-password" placeholder="Leave blank to keep current key"></label>
       </div>
       <div class="settings-checks">
-        <label><input id="set-api-enabled" type="checkbox" ${s.apiEnabled?"checked":""}> Enable API</label>
+        <label><input id="set-api-enabled" type="checkbox" ${s.apiEnabled?"checked":""}> Enable web/API service</label>
         <label><input id="set-api-auth" type="checkbox" ${s.apiAuthEnabled?"checked":""}> Require API key authentication</label>
       </div>
       <div class="settings-note">Changing the API port or authentication can temporarily disconnect this page.</div>
