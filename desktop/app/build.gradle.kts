@@ -98,6 +98,9 @@ val isAOTEnabled = false
 
 tasks.processResources {
     from(tasks.named("exportLibraryDefinitions"))
+    from(rootProject.file("web")) {
+        into("web")
+    }
 }
 
 val cliBinaryName = "${getAppName()}Cli"
@@ -124,6 +127,11 @@ nucleus {
         additionalLaunchers {
             create(cliBinaryName) {
                 mainClass = "$desktopPackageName.cli.CliAppKt"
+                winConsole = true
+                jvmArgs(*defaultJvmArgs())
+            }
+            create("ABDMHeadless") {
+                mainClass = "com.abdownloadmanager.desktop.headless.HeadlessApp"
                 winConsole = true
                 jvmArgs(*defaultJvmArgs())
             }
