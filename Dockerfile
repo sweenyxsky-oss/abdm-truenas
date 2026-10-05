@@ -1,11 +1,11 @@
 FROM eclipse-temurin:25-jdk AS build
-LABEL org.opencontainers.image.source="https://github.com/sweenyxsky-oss/abdm-truenas"
 RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates && rm -rf /var/lib/apt/lists/*
 WORKDIR /src
 COPY . .
 RUN chmod +x ./gradlew && ./gradlew :desktop:app:createReleaseDistributable --no-daemon
 
 FROM debian:bookworm-slim
+LABEL org.opencontainers.image.source="https://github.com/sweenyxsky-oss/abdm-truenas"
 ENV HOME=/config \
     ABDM_API_HOST=0.0.0.0 \
     ABDM_API_PORT=15151 \
