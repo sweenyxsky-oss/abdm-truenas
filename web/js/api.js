@@ -25,3 +25,5 @@ window.ABDM_API.deleteQueue=async function(id){return this.request("/queues/"+en
 window.ABDM_API.queueConcurrency=async function(id,maxConcurrent){return this.request("/queues/"+encodeURIComponent(id)+"/concurrency",{method:"POST",body:JSON.stringify({maxConcurrent})})};
 window.ABDM_API.assignQueue=async function(id,queueId){return this.request("/downloads/"+encodeURIComponent(id)+"/queue",{method:"POST",body:JSON.stringify({queueId})})};
 window.ABDM_API.moveQueueItem=async function(id,direction){return this.request("/downloads/"+encodeURIComponent(id)+"/move",{method:"POST",body:JSON.stringify({direction})})};
+
+window.ABDM_API.unqueue=async function(id){return this.request("/downloads/"+encodeURIComponent(id)+"/unqueue",{method:"POST"})};
