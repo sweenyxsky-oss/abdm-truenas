@@ -96,7 +96,7 @@ function renderScheduler(){
         </div>
         <div class="dialog-actions" style="margin-top:16px"><button class="primary" onclick="saveQueueSchedule(${q.id})">Save schedule</button></div>
       </div>
-    </div>\`
+    </div>`
   }).join("")}</div>${pagination(state.queues.length,p.pages)}`;
 }
 window.saveQueueSchedule=async function(id){
