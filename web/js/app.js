@@ -180,7 +180,7 @@ function renderSimple(name,text){return `<div class="card empty"><strong>${name}
 window.createCategory=async function(){const name=prompt("Category name","New Category");if(!name)return;const path=prompt("Download path","/downloads/"+name.replace(/\\s+/g,"_"));if(path===null)return;try{await ABDM_API.createCategory({name,path,usePath:true,fileTypes:[],urlPatterns:[]});await loadCategories(false)}catch(e){alert("Category creation failed: "+e.message)}};
 window.renameCategory=async function(id,name){const n=prompt("Category name",name);if(!n||n===name)return;try{await ABDM_API.renameCategory(id,n);await loadCategories(false)}catch(e){alert("Rename failed: "+e.message)}};
 window.deleteCategory=async function(id,name){if(!confirm("Delete category '"+name+"'?"))return;try{await ABDM_API.deleteCategory(id);await loadCategories(false)}catch(e){alert("Delete failed: "+e.message)}};
-async function loadCategories(quiet=true){if(!state.connected)return;try{const items=await ABDM_API.categories();state.categories=Array.isArray(items)?items:[];if(state.page==="categories"&&!quiet)render()}catch(e){console.warn("Unable to load categories",e)}}
+async function loadCategories(quiet=true){if(!state.connected)return;try{const items=await ABDM_API.categories();state.categories=Array.isArray(items)?items:[];refreshCategorySelect();if(state.page==="categories"&&!quiet)render()}catch(e){console.warn("Unable to load categories",e)}}
 
 window.browseTo=async function(path){try{const data=await ABDM_API.browser(path);state.browserPath=data.path||"";state.browserItems=Array.isArray(data.items)?data.items:[];state.page=1;render()}catch(e){alert("Browser error: "+e.message)}};
 window.browseParent=async function(){const p=state.browserPath.split("/").filter(Boolean);p.pop();await browseTo(p.join("/"))};
@@ -206,6 +206,7 @@ window.queueAction=async function(id,action){
   try{await ABDM_API.queueControl(id,action);await loadQueues(false)}catch(e){alert("Queue action failed: "+e.message)}
 };
 function refreshQueueSelect(){const s=document.getElementById("queueInput");if(!s)return;s.innerHTML=`<option value="">No queue</option>`+state.queues.map(q=>`<option value="${q.id}">${esc(q.name)}</option>`).join("");}
+function refreshCategorySelect(){const s=document.getElementById("categoryInput");if(!s)return;s.innerHTML=`<option value="">Automatic</option>`+state.categories.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("");}
 async function loadQueues(quiet=true){
   if(!state.connected)return;
   try{
@@ -241,8 +242,8 @@ function formatEta(value){
   return s+"s";
 }
 document.getElementById("nav").addEventListener("click",e=>{const b=e.target.closest(".nav-item");if(b){state.page=b.dataset.page;state.page=1;render();if(state.page==="browser")browseTo(state.browserPath)}}});\n
-document.getElementById("addBtn").onclick=async()=>{await loadQueues(true);refreshQueueSelect();document.getElementById("addDialog").showModal()};
-document.getElementById("addForm").addEventListener("submit",async e=>{e.preventDefault();const urls=document.getElementById("urlInput").value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);if(!urls.length)return;try{await ABDM_API.add({urls,folder:document.getElementById("pathInput").value,queueId:(document.getElementById("queueInput").value===""?null:Number(document.getElementById("queueInput").value))});await loadDownloads(false);document.getElementById("addDialog").close();}catch(err){alert("Backend API error: "+err.message)}});
+document.getElementById("addBtn").onclick=async()=>{await loadQueues(true);await loadCategories(true);refreshQueueSelect();refreshCategorySelect();document.getElementById("addDialog").showModal()};
+document.getElementById("addForm").addEventListener("submit",async e=>{e.preventDefault();const urls=document.getElementById("urlInput").value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);if(!urls.length)return;try{await ABDM_API.add({urls,folder:document.getElementById("pathInput").value,queueId:(document.getElementById("queueInput").value===""?null:Number(document.getElementById("queueInput").value)),categoryId:(document.getElementById("categoryInput").value===""?null:Number(document.getElementById("categoryInput").value))});await loadDownloads(false);document.getElementById("addDialog").close();}catch(err){alert("Backend API error: "+err.message)}});
 async function connect(){try{await ABDM_API.ping();state.connected=true;await loadDownloads(true);await loadQueues(true);await loadCategories(true);await loadSettings(true);document.querySelector(".status-dot").classList.add("ok");document.getElementById("connection").textContent="Backend connected"}catch(e){document.getElementById("connection").textContent="Demo mode"}render()}
 render();connect();
 setInterval(()=>{loadDownloads(true);loadQueues(true);if(state.page==="categories"||state.page==="scheduler")loadQueues(true);if(state.page==="categories")loadCategories(true);if(state.page==="settings")loadSettings(true)},1500);
