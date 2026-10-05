@@ -215,8 +215,8 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
                     status = "Completed", downloadLink = item.downloadLink,
                     dateAdded = item.dateAdded, startTime = item.startTime,
                     completeTime = item.completeTime,
-                    queueId = queueManager.findItemInQueue(item.id),
-                    queueName = queueManager.findItemInQueue(item.id)?.let { queueManager.getQueue(it).getQueueModel().name },
+                    queueId = membership?.first,
+                    queueName = membership?.second,
                 )
             }
         }.sortedByDescending { it.dateAdded }
