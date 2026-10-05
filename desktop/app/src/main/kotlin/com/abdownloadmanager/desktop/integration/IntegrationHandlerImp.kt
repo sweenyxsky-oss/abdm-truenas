@@ -11,6 +11,7 @@ import com.abdownloadmanager.shared.pages.adddownload.ImportOptions
 import com.abdownloadmanager.shared.pages.adddownload.SilentImportOptions
 import com.abdownloadmanager.shared.util.DownloadSystem
 import com.abdownloadmanager.shared.util.ApiKeyUtil
+import com.abdownloadmanager.shared.storage.appsettings.BaseAppSettingsStorage
 import com.abdownloadmanager.shared.util.category.Category
 import com.abdownloadmanager.shared.util.category.CategoryManager
 import ir.amirab.downloader.NewDownloadItemProps
@@ -36,6 +37,7 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
     val appSettings by inject<AppRepository>()
     private val downloaderInUiRegistry by inject<DownloaderInUiRegistry>()
     private val categoryManager by inject<CategoryManager>()
+    private val rawSettings by inject<BaseAppSettingsStorage>()
 
     override suspend fun addDownloadByGui(
         request: AddDownloadsFromIntegration
@@ -65,13 +67,13 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
         dynamicPartCreation = appSettings.dynamicPartCreation.value,
         sparseFileAllocation = appSettings.useSparseFileAllocation.value,
         useAverageSpeed = appSettings.useAverageSpeed.value,
-        autoStartOnBoot = appSettings.appSettings.autoStartOnBoot.value,
-        useCategoryByDefault = appSettings.appSettings.useCategoryByDefault.value,
+        autoStartOnBoot = rawSettings.autoStartOnBoot.value,
+        useCategoryByDefault = rawSettings.useCategoryByDefault.value,
         apiEnabled = appSettings.apiEnabled.value,
         apiPort = appSettings.apiPort.value,
         apiAuthEnabled = appSettings.apiAuthEnabled.value,
         trackDeletedFilesOnDisk = appSettings.trackDeletedFilesOnDisk.value,
-        deletePartialFileOnDownloadCancellation = appSettings.appSettings.deletePartialFileOnDownloadCancellation.value,
+        deletePartialFileOnDownloadCancellation = rawSettings.deletePartialFileOnDownloadCancellation.value,
     )
 
     override suspend fun updateSettings(settings: ApiSettingsModel, apiKey: String?) {
