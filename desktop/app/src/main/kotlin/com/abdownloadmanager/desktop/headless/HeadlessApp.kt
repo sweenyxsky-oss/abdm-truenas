@@ -35,7 +35,6 @@ object HeadlessApp : KoinComponent {
             appRepository.boot()
             // Fully boot the downloader and its queue/category state before exposing the HTTP API.
             downloadSystem.boot()
-            integration.boot()
 
             // First-run container defaults are written into ABDM's persistent settings.
             // AppRepository owns the Integration lifecycle, so do not call integration.enable()
@@ -60,6 +59,9 @@ object HeadlessApp : KoinComponent {
                 initMarker.parentFile?.mkdirs()
                 initMarker.writeText("initialized")
             }
+
+            // Start the HTTP service only after core state and first-run settings are ready.
+            integration.boot()
 
             // The monitor only updates its state flows while they have subscribers.
             // Keep one headless subscription so the REST API always exposes live download state.
