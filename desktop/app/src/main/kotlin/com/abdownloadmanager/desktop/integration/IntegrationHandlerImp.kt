@@ -53,7 +53,14 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
     override fun listQueues(): List<ApiQueueModel> {
         return queueManager.getAll().map { downloadQueue ->
             val queueModel = downloadQueue.getQueueModel()
-            ApiQueueModel(id = queueModel.id, name = queueModel.name)
+            ApiQueueModel(
+                id = queueModel.id,
+                name = queueModel.name,
+                active = queueModel.queueItems.count { id -> downloadSystem.downloadMonitor.downloadListFlow.value.any { it.id == id && (it is ProcessingDownloadItemState) && it.status is DownloadJobStatus.Downloading } },
+                queued = queueModel.queueItems.count { id -> downloadSystem.downloadMonitor.downloadListFlow.value.any { it.id == id && (it is ProcessingDownloadItemState) && it.status == DownloadJobStatus.IDLE } },
+                total = queueModel.queueItems.size,
+                running = downloadQueue.isQueueActive,
+            )
         }
     }
 
@@ -109,6 +116,10 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
             context = RemovedBy(User),
         )
     }
+
+    override fun startQueue(id: Long) { queueManager.getQueue(id).start() }
+
+    override fun stopQueue(id: Long) { queueManager.getQueue(id).stop() }
 
     override suspend fun addDownload(task: NewDownloadTask): Long {
         val addDownloaderInUiProps = convertToDownloadSystemCredentials(task.downloadSource)
