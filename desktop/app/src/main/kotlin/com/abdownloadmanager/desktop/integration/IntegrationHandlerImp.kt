@@ -61,6 +61,7 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
                 total = queueModel.queueItems.size,
                 running = downloadQueue.isQueueActive,
                 maxConcurrent = queueModel.maxConcurrent,
+                items = queueModel.queueItems,
             )
         }
     }
