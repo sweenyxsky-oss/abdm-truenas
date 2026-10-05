@@ -185,7 +185,7 @@ async function loadCategories(quiet=true){if(!state.connected)return;try{const i
 
 window.browseTo=async function(path){try{const data=await ABDM_API.browser(path);state.browserPath=data.path||"";state.browserItems=Array.isArray(data.items)?data.items:[];state.page=1;render()}catch(e){alert("Browser error: "+e.message)}};
 window.browseParent=async function(){const p=state.browserPath.split("/").filter(Boolean);p.pop();await browseTo(p.join("/"))};
-function render(){document.getElementById("page-title").textContent=titles[state.page][0];document.getElementById("page-subtitle").textContent=titles[state.page][1];document.querySelectorAll(".nav-item").forEach(x=>x.classList.toggle("active",x.dataset.page===state.page));let html=state.view==="dashboard"?renderDashboard():state.view==="downloads"?renderDownloads():state.view==="queue"?renderQueue():state.view==="browser"?renderBrowser():state.view==="categories"?renderCategories():state.view==="scheduler"?renderScheduler():state.view==="settings"?renderSettings():renderSimple("Page","Coming soon.");document.getElementById("app").innerHTML=html}
+function render(){document.getElementById("page-title").textContent=titles[state.view][0];document.getElementById("page-subtitle").textContent=titles[state.view][1];document.querySelectorAll(".nav-item").forEach(x=>x.classList.toggle("active",x.dataset.page===state.view));let html=state.view==="dashboard"?renderDashboard():state.view==="downloads"?renderDownloads():state.view==="queue"?renderQueue():state.view==="browser"?renderBrowser():state.view==="categories"?renderCategories():state.view==="scheduler"?renderScheduler():state.view==="settings"?renderSettings():renderSimple("Page","Coming soon.");document.getElementById("app").innerHTML=html}
 window.setPage=n=>{state.page=Number(n);render()};window.setSize=n=>{state.pageSize=Number(n);state.page=1;render()};window.showDownload=function(id){
   const d=state.allDownloads.find(x=>Number(x.id)===Number(id));
   if(!d)return;
@@ -260,7 +260,7 @@ function formatEta(value){
   if(m)return m+"m "+s+"s";
   return s+"s";
 }
-document.getElementById("nav").addEventListener("click",e=>{const b=e.target.closest(".nav-item");if(b){state.page=b.dataset.page;state.page=1;render();if(state.view==="browser")browseTo(state.browserPath)}}});
+document.getElementById("nav").addEventListener("click",e=>{const b=e.target.closest(".nav-item");if(b){state.view=b.dataset.page;state.page=1;render();if(state.view==="browser")browseTo(state.browserPath)}}});
 
 document.getElementById("addBtn").onclick=async()=>{await loadQueues(true);await loadCategories(true);refreshQueueSelect();refreshCategorySelect();if(state.settings?.downloadFolder)document.getElementById("pathInput").value=state.settings.downloadFolder;document.getElementById("addDialog").showModal()};
 document.getElementById("addForm").addEventListener("submit",async e=>{e.preventDefault();const urls=document.getElementById("urlInput").value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);if(!urls.length)return;try{await ABDM_API.add({urls,folder:document.getElementById("pathInput").value,queueId:(document.getElementById("queueInput").value===""?null:Number(document.getElementById("queueInput").value)),categoryId:(document.getElementById("categoryInput").value===""?null:Number(document.getElementById("categoryInput").value))});await loadDownloads(false);document.getElementById("addDialog").close();}catch(err){alert("Backend API error: "+err.message)}});
