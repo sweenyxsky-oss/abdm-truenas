@@ -16,3 +16,14 @@ dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);bo
 .actions{display:inline-flex;gap:4px;align-items:center}.icon-btn{border:1px solid var(--border);background:transparent;color:inherit;border-radius:6px;width:30px;height:28px;cursor:pointer}.icon-btn:hover{background:var(--panel-2)}.icon-btn.danger{color:#ff7777}.icon-btn:disabled{opacity:.45;cursor:not-allowed}
 
 .queue-grid{display:grid;gap:14px}.queue-card{padding:0;overflow:hidden}.queue-head{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:16px 18px;border-bottom:1px solid var(--line)}.queue-head h3{margin:0 0 4px;font-size:15px}.queue-head small,.queue-item small{color:var(--muted);font-size:11px}.queue-items{padding:8px 12px}.queue-item{display:flex;align-items:center;gap:10px;padding:9px 6px;border-bottom:1px solid var(--line)}.queue-item:last-child{border-bottom:0}.queue-order{width:24px;text-align:center;color:var(--muted);font-size:11px}.queue-name{flex:1;min-width:0}.queue-name strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.queue-name small{display:block;margin-top:2px}.browser-path{padding:9px 12px;background:var(--panel);border:1px solid var(--line);border-radius:7px;color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.clickable{cursor:pointer}.clickable:hover td{background:var(--panel2)}
+
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.settings-form label{display:flex;flex-direction:column;gap:6px}
+.settings-form input{width:100%}
+.settings-checks{display:grid;grid-template-columns:1fr 1fr;gap:11px 18px;margin-top:18px}
+.settings-checks label{display:flex;align-items:center;gap:8px;color:var(--text);font-size:13px}
+.settings-note{margin-top:16px;padding:10px 12px;border:1px solid var(--line);border-radius:7px;color:var(--muted);font-size:12px}
+.section-head{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid var(--line)}
+.section-head h3{margin:0 0 4px;font-size:15px}
+.section-head p{margin:0;color:var(--muted);font-size:12px}
+@media(max-width:900px){.settings-grid{grid-template-columns:1fr}.settings-checks{grid-template-columns:1fr}}
