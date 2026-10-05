@@ -166,5 +166,6 @@ internal fun Application.setupRouting(
                 call.respondText("pong")
             }
         }
+        staticResources("/", "web")
     }
 }
