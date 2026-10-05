@@ -13,7 +13,7 @@ window.ABDM_API.add=async function(payload){
   const urls=payload.urls||[];
   return Promise.all(urls.map(link=>this.request("/start-headless-download",{
     method:"POST",
-    body:JSON.stringify({downloadSource:{link:link},folder:payload.folder||null,queueId:payload.queueId||null,startDownload:true,startQueue:false})
+    body:JSON.stringify({downloadSource:{link:link},folder:payload.folder||null,queueId:(payload.queueId===null||payload.queueId===undefined||payload.queueId==="")?null:Number(payload.queueId),startDownload:true,startQueue:false})
   })));
 };
 window.ABDM_API.control=async function(id,action,removeFile=false){return this.request("/downloads/"+encodeURIComponent(id)+"/"+action+(action==="remove"?"?removeFile="+removeFile:""),{method:"POST"})};
@@ -34,3 +34,5 @@ window.ABDM_API.categories=async function(){return this.request("/categories")};
 window.ABDM_API.createCategory=async function(data){return this.request("/categories",{method:"POST",body:JSON.stringify(data)})};
 window.ABDM_API.renameCategory=async function(id,name){return this.request("/categories/"+encodeURIComponent(id)+"/rename",{method:"POST",body:JSON.stringify({name})})};
 window.ABDM_API.deleteCategory=async function(id){return this.request("/categories/"+encodeURIComponent(id)+"/delete",{method:"POST"})};
+
+window.ABDM_API.queueSchedule=async function(id,data){return this.request("/queues/"+encodeURIComponent(id)+"/schedule",{method:"POST",body:JSON.stringify(data)})};
