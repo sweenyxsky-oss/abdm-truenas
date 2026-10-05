@@ -13,7 +13,7 @@ window.ABDM_API.add=async function(payload){
   const urls=payload.urls||[];
   return Promise.all(urls.map(link=>this.request("/start-headless-download",{
     method:"POST",
-    body:JSON.stringify({downloadSource:{link:link},folder:payload.folder||null,queueId:(payload.queueId===null||payload.queueId===undefined||payload.queueId==="")?null:Number(payload.queueId),startDownload:true,startQueue:false})
+    body:JSON.stringify({downloadSource:{link:link},folder:payload.folder||null,queueId:(payload.queueId===null||payload.queueId===undefined||payload.queueId==="")?null:Number(payload.queueId),categoryId:(payload.categoryId===null||payload.categoryId===undefined||payload.categoryId==="")?null:Number(payload.categoryId),startDownload:true,startQueue:false})
   })));
 };
 window.ABDM_API.control=async function(id,action,removeFile=false){return this.request("/downloads/"+encodeURIComponent(id)+"/"+action+(action==="remove"?"?removeFile="+removeFile:""),{method:"POST"})};
