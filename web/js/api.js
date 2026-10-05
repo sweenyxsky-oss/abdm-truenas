@@ -16,3 +16,5 @@ window.ABDM_API.add=async function(payload){
     body:JSON.stringify({downloadSource:{link:link},folder:payload.folder||null,queueId:payload.queueId||null,startDownload:true,startQueue:false})
   })));
 };
+
+window.ABDM_API.control=async function(id,action,removeFile=false){return this.request("/downloads/"+encodeURIComponent(id)+"/"+action+(action==="remove"?"?removeFile="+removeFile:""),{method:"POST"})};
