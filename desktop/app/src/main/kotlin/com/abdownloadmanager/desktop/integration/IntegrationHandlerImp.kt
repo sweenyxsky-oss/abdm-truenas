@@ -14,6 +14,7 @@ import com.abdownloadmanager.shared.util.ApiKeyUtil
 import com.abdownloadmanager.shared.storage.appsettings.BaseAppSettingsStorage
 import com.abdownloadmanager.shared.util.category.Category
 import com.abdownloadmanager.shared.util.category.CategoryManager
+import com.abdownloadmanager.shared.util.category.CategorySelectionMode
 import ir.amirab.downloader.NewDownloadItemProps
 import ir.amirab.downloader.downloaditem.DownloadJobStatus
 import ir.amirab.downloader.downloaditem.EmptyContext
@@ -294,16 +295,27 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
                 ?: task.downloadSource.link.substringAfterLast("/"),
             ),
         )
-        val id = downloadSystem.addDownload(
-            newDownload = NewDownloadItemProps(
-                downloadItem = downloadItem,
-                onDuplicateStrategy = OnDuplicateStrategy.default(),
-                extraConfig = null,
-                context = EmptyContext,
-            ),
-            queueId = task.queueId,
-            categoryId = task.categoryId,
+        val newDownload = NewDownloadItemProps(
+            downloadItem = downloadItem,
+            onDuplicateStrategy = OnDuplicateStrategy.default(),
+            extraConfig = null,
+            context = EmptyContext,
         )
+        val categorySelectionMode = task.categoryId?.let { CategorySelectionMode.Fixed(it) }
+            ?: if (appSettings.useCategoryByDefault.value) CategorySelectionMode.Auto else null
+        val id = if (categorySelectionMode == null) {
+            downloadSystem.addDownload(
+                newDownload = newDownload,
+                queueId = task.queueId,
+                categoryId = null,
+            )
+        } else {
+            downloadSystem.addDownload(
+                newItemsToAdd = listOf(newDownload),
+                queueId = task.queueId,
+                categorySelectionMode = categorySelectionMode,
+            ).single()
+        }
         val queueId = task.queueId
         // either start the queue or manually start the download
         // both of them at the same time is not good idea
