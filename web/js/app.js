@@ -223,8 +223,8 @@ window.moveQueueItem=async function(id,direction){try{await ABDM_API.moveQueueIt
 window.queueAction=async function(id,action){
   try{await ABDM_API.queueControl(id,action);await loadQueues(false)}catch(e){alert("Queue action failed: "+e.message)}
 };
-function refreshQueueSelect(){const s=document.getElementById("queueInput");if(!s)return;s.innerHTML=`<option value="">No queue</option>`+state.queues.map(q=>`<option value="${q.id}">${esc(q.name)}</option>`).join("");}
-function refreshCategorySelect(){const s=document.getElementById("categoryInput");if(!s)return;s.innerHTML=`<option value="">Automatic</option>`+state.categories.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("");}
+function refreshQueueSelect(){const s=document.getElementById("queueInput");if(!s)return;const current=s.value;s.innerHTML=`<option value="">No queue</option>`+state.queues.map(q=>`<option value="${q.id}">${esc(q.name)}</option>`).join("");if(Array.from(s.options).some(o=>o.value===current))s.value=current;}
+function refreshCategorySelect(){const s=document.getElementById("categoryInput");if(!s)return;const current=s.value;s.innerHTML=`<option value="">Automatic</option>`+state.categories.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("");if(Array.from(s.options).some(o=>o.value===current))s.value=current;}
 async function loadQueues(quiet=true){
   if(!state.connected)return;
   try{
