@@ -13,6 +13,8 @@ import com.abdownloadmanager.shared.util.DownloadSystem
 import ir.amirab.downloader.NewDownloadItemProps
 import ir.amirab.downloader.downloaditem.DownloadJobStatus
 import ir.amirab.downloader.downloaditem.EmptyContext
+import ir.amirab.downloader.downloaditem.contexts.RemovedBy
+import ir.amirab.downloader.downloaditem.contexts.User
 import ir.amirab.downloader.downloaditem.hls.HLSDownloadCredentials
 import ir.amirab.downloader.downloaditem.http.HttpDownloadCredentials
 import ir.amirab.downloader.monitor.CompletedDownloadItemState
@@ -85,6 +87,27 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
                 )
             }
         }.sortedByDescending { it.dateAdded }
+    }
+
+    override suspend fun pauseDownload(id: Long) {
+        downloadSystem.manualPause(id)
+    }
+
+    override suspend fun resumeDownload(id: Long) {
+        downloadSystem.userManualResume(id)
+    }
+
+    override suspend fun retryDownload(id: Long) {
+        downloadSystem.reset(id)
+        downloadSystem.userManualResume(id)
+    }
+
+    override suspend fun removeDownload(id: Long, alsoRemoveFile: Boolean) {
+        downloadSystem.removeDownload(
+            id = id,
+            alsoRemoveFile = alsoRemoveFile,
+            context = RemovedBy(User),
+        )
     }
 
     override suspend fun addDownload(task: NewDownloadTask): Long {
