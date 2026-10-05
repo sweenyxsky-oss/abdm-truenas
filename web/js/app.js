@@ -75,7 +75,7 @@ function renderScheduler(){
     const activeDays=Array.isArray(q.activeDays)?q.activeDays:[];
     const start=(q.startTime||"02:30").slice(0,5);
     const end=(q.endTime||"07:30").slice(0,5);
-    return \`<div class="card queue-card">
+    return `<div class="card queue-card">
       <div class="queue-head"><div><h3>${esc(q.name)}</h3><small>${q.schedulerEnabled?"Scheduler enabled":"Scheduler disabled"} · ${q.autoStartEnabled?start+" start": "manual start"} · ${q.autoStopEnabled?end+" stop":"manual stop"}</small></div>
       <span class="tag">${q.schedulerEnabled?"Enabled":"Disabled"}</span></div>
       <div style="padding:16px 18px">
