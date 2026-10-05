@@ -17,4 +17,6 @@ data class ApiDownloadModel(
     val dateAdded: Long,
     val startTime: Long,
     val completeTime: Long,
+    val queueId: Long?,
+    val queueName: String?,
 )
