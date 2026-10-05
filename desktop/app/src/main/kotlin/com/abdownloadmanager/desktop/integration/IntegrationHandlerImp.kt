@@ -121,10 +121,6 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
 
     override fun stopQueue(id: Long) { queueManager.getQueue(id).stop() }
 
-    override fun startQueue(id: Long) { queueManager.getQueue(id).start() }
-
-    override fun stopQueue(id: Long) { queueManager.getQueue(id).stop() }
-
     override suspend fun addDownload(task: NewDownloadTask): Long {
         val addDownloaderInUiProps = convertToDownloadSystemCredentials(task.downloadSource)
         val downloaderInUi = downloaderInUiRegistry.getDownloaderOf(
