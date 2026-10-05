@@ -32,6 +32,7 @@ internal fun Application.setupRouting(
     val apiKey = settings.apiKey
     install(Authentication) {
         apiKey {
+            headerName = "X-API-Key"
             validate { receivedKey ->
                 if (receivedKey == apiKey) {
                     AppPrincipal(receivedKey)
