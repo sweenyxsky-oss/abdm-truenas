@@ -230,6 +230,6 @@ Open:
 http://TRUENAS-IP:15151/
 ```
 
-The container image is built by GitHub Actions and published to GHCR.
+The container image is built by GitHub Actions and published to GHCR. The GHCR package must be publicly pullable for the unauthenticated Compose example to work; otherwise configure registry credentials in TrueNAS.
 
 > The repository's Docker image build is intended for the TrueNAS headless deployment. The regular desktop application remains available through the upstream desktop build configuration.
