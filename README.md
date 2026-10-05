@@ -210,6 +210,7 @@ dataPool
 The container expects these paths:
 
 - `/config` — persistent ABDM settings and application data
+- The `ABDM_DOWNLOAD_FOLDER` container variable is applied on first initialization; later changes should be made in the web Settings page.
 - `/downloads` — completed and active downloads
 - `/temp` — temporary download data
 
