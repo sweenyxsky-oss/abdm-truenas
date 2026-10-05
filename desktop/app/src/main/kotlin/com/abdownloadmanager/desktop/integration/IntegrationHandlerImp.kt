@@ -255,7 +255,6 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
             )
         }
         queue.setStopQueueOnEmpty(stopQueueOnEmpty)
-        }
     }
 
     override suspend fun assignDownloadToQueue(downloadId: Long, queueId: Long) { queueManager.addToQueue(queueId, downloadId) }
