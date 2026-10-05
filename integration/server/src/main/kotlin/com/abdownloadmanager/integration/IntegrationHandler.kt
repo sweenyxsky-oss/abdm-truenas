@@ -16,4 +16,10 @@ interface IntegrationHandler{
     suspend fun removeDownload(id: Long, alsoRemoveFile: Boolean)
     fun startQueue(id: Long)
     fun stopQueue(id: Long)
+    suspend fun addQueue(name: String): Long
+    suspend fun deleteQueue(id: Long)
+    suspend fun renameQueue(id: Long, name: String)
+    suspend fun setQueueConcurrency(id: Long, maxConcurrent: Int)
+    suspend fun assignDownloadToQueue(downloadId: Long, queueId: Long)
+    suspend fun moveQueueItem(downloadId: Long, direction: Int)
 }
