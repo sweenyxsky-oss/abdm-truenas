@@ -21,5 +21,6 @@ interface IntegrationHandler{
     suspend fun renameQueue(id: Long, name: String)
     suspend fun setQueueConcurrency(id: Long, maxConcurrent: Int)
     suspend fun assignDownloadToQueue(downloadId: Long, queueId: Long)
+    suspend fun removeDownloadFromQueue(downloadId: Long)
     suspend fun moveQueueItem(downloadId: Long, direction: Int)
 }
