@@ -36,3 +36,6 @@ window.ABDM_API.renameCategory=async function(id,name){return this.request("/cat
 window.ABDM_API.deleteCategory=async function(id){return this.request("/categories/"+encodeURIComponent(id)+"/delete",{method:"POST"})};
 
 window.ABDM_API.queueSchedule=async function(id,data){return this.request("/queues/"+encodeURIComponent(id)+"/schedule",{method:"POST",body:JSON.stringify(data)})};
+
+window.ABDM_API.settings=async function(){return this.request("/settings")};
+window.ABDM_API.updateSettings=async function(settings,apiKey){return this.request("/settings",{method:"POST",body:JSON.stringify({settings,apiKey:apiKey||null})})};
