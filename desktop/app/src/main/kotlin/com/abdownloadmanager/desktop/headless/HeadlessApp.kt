@@ -33,6 +33,14 @@ object HeadlessApp : KoinComponent {
             Di.boot()
 
             // Load persisted application settings and start the real downloader.
+            val containerDownloadFolder = System.getenv("ABDM_DOWNLOAD_FOLDER")?.takeIf { it.isNotBlank() }
+            val initMarker = java.io.File(System.getProperty("user.home"), ".abdm-truenas-initialized")
+            if (containerDownloadFolder != null && !initMarker.exists()) {
+                appRepository.saveLocation.value = containerDownloadFolder
+                initMarker.parentFile?.mkdirs()
+                initMarker.writeText("initialized")
+            }
+
             appRepository.boot()
             integration.boot()
             downloadSystem.boot()
