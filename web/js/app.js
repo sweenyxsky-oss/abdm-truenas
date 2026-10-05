@@ -45,6 +45,11 @@ window.bulkAction=async function(action){
   const ids=state.allDownloads.filter(x=>action==="pause"?["Downloading","Preparing","Retrying"].includes(x.status):["Paused","Queued"].includes(x.status)).map(x=>x.id);
   try{await Promise.all(ids.map(id=>ABDM_API.control(id,action)));await loadDownloads(false)}catch(e){alert("Bulk action failed: "+e.message)}
 };
+window.createQueue=async function(){const name=prompt("Queue name","New Queue");if(!name)return;try{await ABDM_API.createQueue(name);await loadQueues(false)}catch(e){alert(e.message)}};
+window.renameQueue=async function(id,name){const n=prompt("Queue name",name);if(!n||n===name)return;try{await ABDM_API.renameQueue(id,n);await loadQueues(false)}catch(e){alert(e.message)}};
+window.deleteQueue=async function(id,name){if(id===0)return;if(!confirm("Delete queue '"+name+"'? Downloads remain."))return;try{await ABDM_API.deleteQueue(id);await loadQueues(false)}catch(e){alert(e.message)}};
+window.setQueueConcurrency=async function(id,current){const n=Number(prompt("Maximum simultaneous downloads",current));if(!Number.isInteger(n)||n<1)return;try{await ABDM_API.queueConcurrency(id,n);await loadQueues(false)}catch(e){alert(e.message)}};
+window.moveDownloadToQueue=async function(id){const list=state.queues.map(q=>q.id+" = "+q.name).join("\n");const value=prompt("Enter queue ID:\n"+list,"0");if(value===null)return;const q=Number(value);if(!Number.isInteger(q))return;try{await ABDM_API.assignQueue(id,q);await loadDownloads(false)}catch(e){alert("Queue assignment failed: "+e.message)}};
 window.queueAction=async function(id,action){
   try{await ABDM_API.queueControl(id,action);await loadQueues(false)}catch(e){alert("Queue action failed: "+e.message)}
 };
