@@ -27,3 +27,9 @@ dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);bo
 .section-head h3{margin:0 0 4px;font-size:15px}
 .section-head p{margin:0;color:var(--muted);font-size:12px}
 @media(max-width:900px){.settings-grid{grid-template-columns:1fr}.settings-checks{grid-template-columns:1fr}}
+
+.details-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.details-grid>div{display:flex;flex-direction:column;gap:5px;padding:12px;background:var(--panel)}
+.details-grid span{color:var(--muted);font-size:11px}
+.details-grid strong{font-size:13px;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:650px){.details-grid{grid-template-columns:1fr}}
