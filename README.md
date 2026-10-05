@@ -221,7 +221,9 @@ TrueNAS SCALE 25.10 supports installing custom applications from Docker Compose 
 docker-compose.truenas.yml
 ```
 
-The default web/API port is **15151**. Open:
+The default web/API port is **15151**. If the service is reachable beyond a trusted LAN, enable **Require API key authentication** in Settings (or provide `ABDM_API_KEY` on first boot). API keys should be protected and HTTPS should be used when crossing an untrusted network.
+
+Open:
 
 ```
 http://TRUENAS-IP:15151/
