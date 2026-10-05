@@ -18,3 +18,10 @@ window.ABDM_API.add=async function(payload){
 };
 window.ABDM_API.control=async function(id,action,removeFile=false){return this.request("/downloads/"+encodeURIComponent(id)+"/"+action+(action==="remove"?"?removeFile="+removeFile:""),{method:"POST"})};
 window.ABDM_API.queueControl=async function(id,action){return this.request("/queues/"+encodeURIComponent(id)+"/"+action,{method:"POST"})};
+
+window.ABDM_API.createQueue=async function(name){return this.request("/queues",{method:"POST",body:JSON.stringify({name})})};
+window.ABDM_API.renameQueue=async function(id,name){return this.request("/queues/"+encodeURIComponent(id)+"/rename",{method:"POST",body:JSON.stringify({name})})};
+window.ABDM_API.deleteQueue=async function(id){return this.request("/queues/"+encodeURIComponent(id)+"/delete",{method:"POST"})};
+window.ABDM_API.queueConcurrency=async function(id,maxConcurrent){return this.request("/queues/"+encodeURIComponent(id)+"/concurrency",{method:"POST",body:JSON.stringify({maxConcurrent})})};
+window.ABDM_API.assignQueue=async function(id,queueId){return this.request("/downloads/"+encodeURIComponent(id)+"/queue",{method:"POST",body:JSON.stringify({queueId})})};
+window.ABDM_API.moveQueueItem=async function(id,direction){return this.request("/downloads/"+encodeURIComponent(id)+"/move",{method:"POST",body:JSON.stringify({direction})})};
