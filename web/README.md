@@ -1,25 +1,36 @@
 # ABDM TrueNAS Web UI
 
-This is the first native web interface for the TrueNAS/headless ABDM project.
+This directory contains the native browser UI bundled into the headless TrueNAS build.
 
-## Current state
+## Current implementation
 
-- Dark ABDM-style navigation and dashboard
-- Downloads table with percentage, speed and ETA
-- Pagination controls with 10 / 25 / 50 items per page
-- Queue page with pagination
-- Add-download dialog
-- Browser, categories, scheduler and settings placeholders
-- API adapter in `web/js/api.js`
-- Uses the existing ABDM REST endpoints when available
+- Dashboard with live active/queued/completed counts and aggregate speed
+- Latest downloads with pagination and 10 / 25 / 50 items per page
+- Downloads page with search, progress, speed, ETA, pause, resume, retry, queue assignment, and removal
+- Download details dialog
+- Queue management with start/stop, rename, concurrency, ordering, and removal from queue
+- Per-queue scheduler controls for active days, start/stop times, and stop-when-empty
+- Download-folder browser with root/up navigation and pagination
+- Category listing, creation, rename, and deletion of custom categories
+- Settings for download behavior, storage, API port, API enablement, and API-key authentication
+- Same-origin API adapter with optional `X-API-Key` authentication
+- Live backend refresh every 1.5 seconds
 
-The existing ABDM API currently exposes `/ping`, `/queues`, `/add`, and `/start-headless-download`. Rich download-management screens will be connected after the headless backend API is expanded.
+## Architecture
+
+The page is served directly by Ktor from the packaged application resources:
+
+```
+Browser -> Ktor web UI -> authenticated REST API -> ABDM DownloadSystem
+```
+
+There is no Xvfb, no noVNC, and no virtual desktop involved.
 
 ## Development
 
-Serve the repository root with any static HTTP server and open `/web/`. In the final TrueNAS app, the web directory will be served by the web container and `/api` will be reverse-proxied to the ABDM backend.
+The final container serves the UI from the root path. For local static inspection, serve the repository's `web/` directory with any static HTTP server, but API-backed features require the ABDM backend.
 
-## Storage target
+## Storage
 
 The intended TrueNAS datasets are:
 
@@ -27,4 +38,6 @@ The intended TrueNAS datasets are:
 - `dataPool/abdm/downloads`
 - `dataPool/abdm/temp`
 
-Do not hard-code host filesystem paths into the downloader core; container paths will be mapped by the final TrueNAS application configuration.
+Inside the container these are mounted as `/config`, `/downloads`, and `/temp`.
+
+Do not hard-code host filesystem paths into the downloader core; host dataset paths belong in the TrueNAS/Compose deployment configuration.
