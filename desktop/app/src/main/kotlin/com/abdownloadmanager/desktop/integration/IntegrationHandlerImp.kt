@@ -10,6 +10,8 @@ import com.abdownloadmanager.shared.pages.adddownload.AddDownloadCredentialsInUi
 import com.abdownloadmanager.shared.pages.adddownload.ImportOptions
 import com.abdownloadmanager.shared.pages.adddownload.SilentImportOptions
 import com.abdownloadmanager.shared.util.DownloadSystem
+import com.abdownloadmanager.shared.util.category.Category
+import com.abdownloadmanager.shared.util.category.CategoryManager
 import ir.amirab.downloader.NewDownloadItemProps
 import ir.amirab.downloader.downloaditem.DownloadJobStatus
 import ir.amirab.downloader.downloaditem.EmptyContext
@@ -30,6 +32,7 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
     val queueManager by inject<QueueManager>()
     val appSettings by inject<AppRepository>()
     private val downloaderInUiRegistry by inject<DownloaderInUiRegistry>()
+    private val categoryManager by inject<CategoryManager>()
 
     override suspend fun addDownloadByGui(
         request: AddDownloadsFromIntegration
@@ -81,6 +84,25 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
                 ApiBrowserItem(it.name, itemPath, it.isDirectory, if (it.isFile) it.length() else 0L, it.lastModified())
             } ?: emptyList()
         return ApiBrowserResponse(relative, parent, items)
+    }
+
+    override fun listCategories(): List<ApiCategoryModel> = categoryManager.getCategories().map {
+        ApiCategoryModel(it.id, it.name, it.path, it.usePath, it.acceptedFileTypes, it.acceptedUrlPatterns, it.items, categoryManager.isDefaultCategory(it))
+    }
+
+    override suspend fun addCategory(name: String, path: String, usePath: Boolean, fileTypes: List<String>, urlPatterns: List<String>): Long {
+        val category = Category(-1L, name, "", path, usePath, fileTypes.map { it.trim().trimStart('.') }.filter { it.isNotBlank() }, urlPatterns.map { it.trim() }.filter { it.isNotBlank() })
+        categoryManager.addCustomCategory(category)
+        return categoryManager.getCategories().last().id
+    }
+
+    override suspend fun renameCategory(id: Long, name: String) {
+        categoryManager.updateCategory(id) { it.copy(name = name) }
+    }
+
+    override suspend fun deleteCategory(id: Long) {
+        require(!categoryManager.isDefaultCategory(categoryManager.getCategoryById(id) ?: error("Category not found")))
+        categoryManager.deleteCategory(id)
     }
 
     override fun listDownloads(): List<ApiDownloadModel> {
