@@ -66,7 +66,7 @@ internal fun Application.setupRouting(
                 call.respondText("OK")
             }
             get("/settings") {
-                call.respondText(json.encodeToString(ApiSettingsModel.serializer(), integrationHandler.getSettings(, ContentType.Application.Json))
+                call.respondText(json.encodeToString(ApiSettingsModel.serializer(), integrationHandler.getSettings()), ContentType.Application.Json)
             }
             post("/settings") {
                 val body = json.decodeFromString<Map<String, kotlinx.serialization.json.JsonElement>>(call.receiveText())
@@ -77,10 +77,10 @@ internal fun Application.setupRouting(
             }
             get("/browser") {
                 val path = call.request.queryParameters["path"]
-                call.respondText(json.encodeToString(ApiBrowserResponse.serializer(), integrationHandler.browse(path, ContentType.Application.Json))
+                call.respondText(json.encodeToString(ApiBrowserResponse.serializer(), integrationHandler.browse(path)), ContentType.Application.Json)
             }
             get("/categories") {
-                call.respondText(json.encodeToString(ListSerializer(ApiCategoryModel.serializer(, ContentType.Application.Json), integrationHandler.listCategories()))
+                call.respondText(json.encodeToString(ListSerializer(ApiCategoryModel.serializer()), integrationHandler.listCategories()), ContentType.Application.Json)
             }
             post("/categories") {
                 val body=json.decodeFromString<Map<String, kotlinx.serialization.json.JsonElement>>(call.receiveText())
@@ -104,12 +104,12 @@ internal fun Application.setupRouting(
             }
             get("/downloads") {
                 val downloads = integrationHandler.listDownloads()
-                call.respondText(json.encodeToString(ListSerializer(ApiDownloadModel.serializer()), downloads))
+                call.respondText(json.encodeToString(ListSerializer(ApiDownloadModel.serializer()), downloads), ContentType.Application.Json)
             }
             get("/queues") {
                 val queues = integrationHandler.listQueues()
                 val jsonResponse = json.encodeToString(ListSerializer(ApiQueueModel.serializer()), queues)
-                call.respondText(jsonResponse)
+                call.respondText(jsonResponse, ContentType.Application.Json)
             }
             post("/queues") { val body=json.decodeFromString<Map<String,String>>(call.receiveText()); call.respondText(integrationHandler.addQueue(body["name"] ?: "New Queue").toString(), ContentType.Application.Json) }
             route("/queues/{id}") {
