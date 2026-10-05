@@ -43,11 +43,14 @@ class AppRepository(
             if (!apiEnabled) {
                 return@combine null
             }
+            // Fail closed if authentication is enabled but the persisted key is invalid.
+            // Never start an unauthenticated server merely because key validation failed.
+            if (apiAuthEnabled && !ApiKeyUtil.isValidKey(apiAuthKey)) {
+                return@combine null
+            }
             IntegrationSettings(
                 port = apiPort,
-                apiKey = apiAuthKey
-                    .takeIf { apiAuthEnabled }
-                    .takeIf { ApiKeyUtil.isValidKey(apiAuthKey) }
+                apiKey = apiAuthKey.takeIf { apiAuthEnabled }
             )
         }
             .debounce(500.milliseconds)
