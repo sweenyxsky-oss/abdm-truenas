@@ -66,6 +66,23 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
         }
     }
 
+    override fun browse(path: String?): ApiBrowserResponse {
+        val root = java.io.File(appSettings.saveLocation.value).canonicalFile
+        val relative = path?.trim()?.trim('/') ?: ""
+        val target = java.io.File(root, relative).canonicalFile
+        require(target.path == root.path || target.path.startsWith(root.path + java.io.File.separator)) { "Invalid browser path" }
+        require(target.isDirectory) { "Not a directory" }
+        val parent = if (target.path == root.path) null else target.relativeTo(root).path.replace(java.io.File.separatorChar, '/').let { value ->
+            value.substringBeforeLast('/', "").ifBlank { null }
+        }
+        val items = target.listFiles()?.sortedWith(compareBy<java.io.File> { !it.isDirectory }.thenBy(String.CASE_INSENSITIVE_ORDER) { it.name })
+            ?.map {
+                val itemPath = it.relativeTo(root).path.replace(java.io.File.separatorChar, '/')
+                ApiBrowserItem(it.name, itemPath, it.isDirectory, if (it.isFile) it.length() else 0L, it.lastModified())
+            } ?: emptyList()
+        return ApiBrowserResponse(relative, parent, items)
+    }
+
     override fun listDownloads(): List<ApiDownloadModel> {
         return downloadSystem.downloadMonitor.downloadListFlow.value.map { item ->
             when (item) {
