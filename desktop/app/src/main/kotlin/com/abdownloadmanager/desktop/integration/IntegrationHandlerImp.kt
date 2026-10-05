@@ -157,6 +157,7 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
 
     override suspend fun addCategory(name: String, path: String, usePath: Boolean, fileTypes: List<String>, urlPatterns: List<String>): Long {
         require(name.isNotBlank())
+        require(!usePath || path.isNotBlank())
         val category = Category(-1L, name.trim(), "", path.trim(), usePath, fileTypes.map { it.trim().trimStart('.') }.filter { it.isNotBlank() }, urlPatterns.map { it.trim() }.filter { it.isNotBlank() })
         categoryManager.addCustomCategory(category)
         return categoryManager.getCategories().maxByOrNull { it.id }?.id ?: error("Unable to determine new category ID")
