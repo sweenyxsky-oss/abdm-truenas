@@ -3,6 +3,7 @@ state.downloads=[];
 
 const titles={dashboard:["Dashboard","Download manager overview"],downloads:["Downloads","All download tasks"],queue:["Queue","Manage download queues"],browser:["Browser","Repository and file browser"],categories:["Categories","Organize downloads"],scheduler:["Scheduler","Scheduled download rules"],settings:["Settings","ABDM service configuration"]};
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function jsAttrArg(s){return esc(JSON.stringify(String(s)))}
 function paginate(items){const start=(state.page-1)*state.pageSize;return {items:items.slice(start,start+state.pageSize),pages:Math.max(1,Math.ceil(items.length/state.pageSize)),start}}
 function pagination(total,pages){if(state.page>pages)state.page=pages;return `<div class="pagination"><span>Showing ${total?((state.page-1)*state.pageSize+1):0}–${Math.min(state.page*state.pageSize,total)} of ${total}</span><div class="pages">${Array.from({length:pages},(_,i)=>`<button class="${i+1===state.page?"active":""}" onclick="setPage(${i+1})">${i+1}</button>`).join("")}</div><label style="display:flex;align-items:center;gap:7px">Per page<select class="page-size" onchange="setSize(this.value)"><option value="10" ${state.pageSize===10?"selected":""}>10</option><option value="25" ${state.pageSize===25?"selected":""}>25</option><option value="50" ${state.pageSize===50?"selected":""}>50</option></select></label></div>`}
 function actionButtons(x){
@@ -39,9 +40,9 @@ function renderQueue(){
         <div><h3>${esc(q.name)}</h3><small>${q.active} active · ${q.queued} queued · ${q.total} total · max ${q.maxConcurrent||1} concurrent</small></div>
         <div class="actions">
           ${q.running?'<button class="icon-btn" title="Stop queue" onclick="queueAction('+q.id+',\'stop\')">⏹</button>':'<button class="icon-btn" title="Start queue" onclick="queueAction('+q.id+',\'start\')">▶</button>'}
-          <button class="icon-btn" title="Rename" onclick="renameQueue(${q.id},${JSON.stringify(q.name)})">✎</button>
+          <button class="icon-btn" title="Rename" onclick="renameQueue(${q.id})">✎</button>
           <button class="icon-btn" title="Concurrency" onclick="setQueueConcurrency(${q.id},${q.maxConcurrent||1})">≡</button>
-          ${q.id!==0?'<button class="icon-btn danger" title="Delete" onclick="deleteQueue('+q.id+','+JSON.stringify(q.name)+')">✕</button>':''}
+          ${q.id!==0?'<button class="icon-btn danger" title="Delete" onclick="deleteQueue('+q.id+')">✕</button>':''}
         </div>
       </div>
       <div class="queue-items">${items.length?items.map((d,i)=>`<div class="queue-item">
@@ -60,12 +61,12 @@ function renderBrowser(){
   const p=paginate(state.browserItems);
   const crumbs=state.browserPath?state.browserPath.split("/").filter(Boolean):[];
   return `<div class="toolbar"><button class="secondary" onclick="browseTo('')">⌂ Root</button><button class="secondary" ${!state.browserPath?'disabled':''} onclick="browseParent()">↑ Up</button><div class="browser-path grow">/ ${crumbs.map(esc).join(" / ")}</div></div>
-  <div class="card table-wrap"><table class="table"><thead><tr><th>NAME</th><th>TYPE</th><th>SIZE</th><th>MODIFIED</th></tr></thead><tbody>${p.items.map(x=>`<tr ${x.directory?'class="clickable" onclick="browseTo('+JSON.stringify(x.path)+')"':''}><td class="name">${x.directory?'📁':'📄'} ${esc(x.name)}</td><td>${x.directory?'Folder':'File'}</td><td>${x.directory?'—':formatBytes(x.size)}</td><td>${x.modified?new Date(x.modified).toLocaleString():'—'}</td></tr>`).join("") || '<tr><td colspan="4" class="empty">This folder is empty.</td></tr>'}</tbody></table></div>${pagination(state.browserItems.length,p.pages)}`;
+  <div class="card table-wrap"><table class="table"><thead><tr><th>NAME</th><th>TYPE</th><th>SIZE</th><th>MODIFIED</th></tr></thead><tbody>${p.items.map(x=>`<tr ${x.directory?'class="clickable" onclick="browseTo(${jsAttrArg(x.path)})"':''}><td class="name">${x.directory?'📁':'📄'} ${esc(x.name)}</td><td>${x.directory?'Folder':'File'}</td><td>${x.directory?'—':formatBytes(x.size)}</td><td>${x.modified?new Date(x.modified).toLocaleString():'—'}</td></tr>`).join("") || '<tr><td colspan="4" class="empty">This folder is empty.</td></tr>'}</tbody></table></div>${pagination(state.browserItems.length,p.pages)}`;
 }
 function renderCategories(){
   const p=paginate(state.categories);
   return `<div class="toolbar"><div class="grow"></div><button class="primary" onclick="createCategory()">＋ New category</button></div>
-  <div class="card table-wrap"><table class="table"><thead><tr><th>NAME</th><th>PATH</th><th>FILE TYPES</th><th>ITEMS</th><th></th></tr></thead><tbody>${p.items.map(x=>`<tr><td><strong>${esc(x.name)}</strong>${x.defaultCategory?'<span class="tag" style="margin-left:8px">Default</span>':''}</td><td>${x.usePath?esc(x.path):'<span class="muted">Default download path</span>'}</td><td>${esc((x.acceptedFileTypes||[]).join(", ")||"All")}</td><td>${x.items?.length||0}</td><td><span class="actions"><button class="icon-btn" title="Rename" onclick="renameCategory(${x.id},${JSON.stringify(x.name)})">✎</button>${x.defaultCategory?'':'<button class="icon-btn danger" title="Delete" onclick="deleteCategory('+x.id+','+JSON.stringify(x.name)+')">✕</button>'}</span></td></tr>`).join("")}</tbody></table></div>${pagination(state.categories.length,p.pages)}`;
+  <div class="card table-wrap"><table class="table"><thead><tr><th>NAME</th><th>PATH</th><th>FILE TYPES</th><th>ITEMS</th><th></th></tr></thead><tbody>${p.items.map(x=>`<tr><td><strong>${esc(x.name)}</strong>${x.defaultCategory?'<span class="tag" style="margin-left:8px">Default</span>':''}</td><td>${x.usePath?esc(x.path):'<span class="muted">Default download path</span>'}</td><td>${esc((x.acceptedFileTypes||[]).join(", ")||"All")}</td><td>${x.items?.length||0}</td><td><span class="actions"><button class="icon-btn" title="Rename" onclick="renameCategory(${x.id})">✎</button>${x.defaultCategory?'':'<button class="icon-btn danger" title="Delete" onclick="deleteCategory('+x.id+')">✕</button>'}</span></td></tr>`).join("")}</tbody></table></div>${pagination(state.categories.length,p.pages)}`;
 }
 function renderSettings(){
   const s=state.settings||{};
@@ -179,8 +180,8 @@ window.saveQueueSchedule=async function(id){
 
 function renderSimple(name,text){return `<div class="card empty"><strong>${name}</strong>${text}</div>`}
 window.createCategory=async function(){const name=prompt("Category name","New Category");if(!name)return;const path=prompt("Download path","/downloads/"+name.replace(/\\s+/g,"_"));if(path===null)return;try{await ABDM_API.createCategory({name,path,usePath:true,fileTypes:[],urlPatterns:[]});await loadCategories(false)}catch(e){alert("Category creation failed: "+e.message)}};
-window.renameCategory=async function(id,name){const n=prompt("Category name",name);if(!n||n===name)return;try{await ABDM_API.renameCategory(id,n);await loadCategories(false)}catch(e){alert("Rename failed: "+e.message)}};
-window.deleteCategory=async function(id,name){if(!confirm("Delete category '"+name+"'?"))return;try{await ABDM_API.deleteCategory(id);await loadCategories(false)}catch(e){alert("Delete failed: "+e.message)}};
+window.renameCategory=async function(id){const x=state.categories.find(c=>Number(c.id)===Number(id));if(!x)return;const n=prompt("Category name",x.name);if(!n||n===x.name)return;try{await ABDM_API.renameCategory(id,n);await loadCategories(false)}catch(e){alert("Rename failed: "+e.message)}};
+window.deleteCategory=async function(id){const x=state.categories.find(c=>Number(c.id)===Number(id));if(!x)return;if(!confirm("Delete category '"+x.name+"'?"))return;try{await ABDM_API.deleteCategory(id);await loadCategories(false)}catch(e){alert("Delete failed: "+e.message)}};
 async function loadCategories(quiet=true){if(!state.connected)return;try{const items=await ABDM_API.categories();state.categories=Array.isArray(items)?items:[];state.page=Math.min(state.page,Math.max(1,Math.ceil(state.categories.length/state.pageSize)));refreshCategorySelect();if(state.view==="categories"&&!quiet)render()}catch(e){console.warn("Unable to load categories",e)}}
 
 window.browseTo=async function(path){try{const data=await ABDM_API.browser(path);state.browserPath=data.path||"";state.browserItems=Array.isArray(data.items)?data.items:[];state.page=1;render()}catch(e){alert("Browser error: "+e.message)}};
@@ -214,8 +215,8 @@ window.bulkAction=async function(action){
   try{await Promise.all(ids.map(id=>ABDM_API.control(id,action)));await loadDownloads(false)}catch(e){alert("Bulk action failed: "+e.message)}
 };
 window.createQueue=async function(){const name=prompt("Queue name","New Queue");if(!name)return;try{await ABDM_API.createQueue(name);await loadQueues(false)}catch(e){alert(e.message)}};
-window.renameQueue=async function(id,name){const n=prompt("Queue name",name);if(!n||n===name)return;try{await ABDM_API.renameQueue(id,n);await loadQueues(false)}catch(e){alert(e.message)}};
-window.deleteQueue=async function(id,name){if(id===0)return;if(!confirm("Delete queue '"+name+"'? Downloads remain."))return;try{await ABDM_API.deleteQueue(id);await loadQueues(false)}catch(e){alert(e.message)}};
+window.renameQueue=async function(id){const q=state.queues.find(x=>Number(x.id)===Number(id));if(!q)return;const n=prompt("Queue name",q.name);if(!n||n===q.name)return;try{await ABDM_API.renameQueue(id,n);await loadQueues(false)}catch(e){alert(e.message)}};
+window.deleteQueue=async function(id){const q=state.queues.find(x=>Number(x.id)===Number(id));if(!q||Number(id)===0)return;if(!confirm("Delete queue '"+q.name+"'? Downloads remain."))return;try{await ABDM_API.deleteQueue(id);await loadQueues(false)}catch(e){alert(e.message)}};
 window.setQueueConcurrency=async function(id,current){const n=Number(prompt("Maximum simultaneous downloads",current));if(!Number.isInteger(n)||n<1)return;try{await ABDM_API.queueConcurrency(id,n);await loadQueues(false)}catch(e){alert(e.message)}};
 window.moveDownloadToQueue=async function(id){const list=state.queues.map(q=>q.id+" = "+q.name).join("\n");const value=prompt("Enter queue ID:\n"+list,"0");if(value===null)return;const q=Number(value);if(!Number.isInteger(q)||!state.queues.some(x=>Number(x.id)===q)){alert("Invalid queue ID.");return}try{await ABDM_API.assignQueue(id,q);await loadDownloads(false);await loadQueues(false)}catch(e){alert("Queue assignment failed: "+e.message)}};
 window.assignDownload=async function(id,queueId){try{if(queueId===null)await ABDM_API.unqueue(id);else await ABDM_API.assignQueue(id,queueId);await loadDownloads(false);await loadQueues(false)}catch(e){alert("Queue assignment failed: "+e.message)}};
