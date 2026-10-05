@@ -1,0 +1,15 @@
+name: abdm
+services:
+  abdm:
+    image: ghcr.io/sweenyxsky-oss/abdm-truenas:latest
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Riyadh
+      ABDM_API_HOST: 0.0.0.0
+      ABDM_API_PORT: 15151
+    ports:
+      - "15151:15151"
+    volumes:
+      - /mnt/dataPool/abdm/config:/config
+      - /mnt/dataPool/abdm/downloads:/downloads
+      - /mnt/dataPool/abdm/temp:/temp
