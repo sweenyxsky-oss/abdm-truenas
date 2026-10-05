@@ -74,7 +74,11 @@ internal fun Application.setupRouting(
                 integrationHandler.updateSettings(settings, apiKey)
                 call.respondText("OK")
             }
-            get("/browser") {\n                val path = call.request.queryParameters["path"]\n                call.respondText(json.encodeToString(ApiBrowserResponse.serializer(), integrationHandler.browse(path)))\n            }\n            get("/categories") {
+            get("/browser") {
+                val path = call.request.queryParameters["path"]
+                call.respondText(json.encodeToString(ApiBrowserResponse.serializer(), integrationHandler.browse(path)))
+            }
+            get("/categories") {
                 call.respondText(json.encodeToString(ListSerializer(ApiCategoryModel.serializer()), integrationHandler.listCategories()))
             }
             post("/categories") {
