@@ -96,6 +96,7 @@ internal fun Application.setupRouting(
                     call.respondText("OK")
                 }
                 post("/queue") { val body=json.decodeFromString<Map<String,Long>>(call.receiveText()); integrationHandler.assignDownloadToQueue(call.parameters["id"]!!.toLong(), body["queueId"] ?: 0L); call.respondText("OK") }
+                post("/unqueue") { integrationHandler.removeDownloadFromQueue(call.parameters["id"]!!.toLong()); call.respondText("OK") }
                 post("/move") { val body=json.decodeFromString<Map<String,Int>>(call.receiveText()); integrationHandler.moveQueueItem(call.parameters["id"]!!.toLong(), body["direction"] ?: 0); call.respondText("OK") }
                 post("/remove") {
                     val removeFile = call.request.queryParameters["removeFile"]?.toBoolean() ?: false
