@@ -5,10 +5,13 @@ import com.abdownloadmanager.integration.model.ApiDownloadModel
 import com.abdownloadmanager.integration.model.ApiBrowserResponse
 import com.abdownloadmanager.integration.model.ApiCategoryModel
 import com.abdownloadmanager.integration.model.ApiQueueModel
+import com.abdownloadmanager.integration.model.ApiSettingsModel
 import com.abdownloadmanager.integration.model.NewDownloadTask
 
 interface IntegrationHandler{
     suspend fun addDownloadByGui(request: AddDownloadsFromIntegration)
+    fun getSettings(): ApiSettingsModel
+    suspend fun updateSettings(settings: ApiSettingsModel, apiKey: String?)
     fun listQueues(): List<ApiQueueModel>
     fun listDownloads(): List<ApiDownloadModel>
     fun browse(path: String?): ApiBrowserResponse
