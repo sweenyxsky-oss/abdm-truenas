@@ -22,6 +22,8 @@ import ir.amirab.downloader.downloaditem.http.HttpDownloadCredentials
 import ir.amirab.downloader.monitor.CompletedDownloadItemState
 import ir.amirab.downloader.monitor.ProcessingDownloadItemState
 import ir.amirab.downloader.queue.QueueManager
+import kotlinx.datetime.DayOfWeek
+import kotlinx.datetime.LocalTime
 import ir.amirab.downloader.utils.OnDuplicateStrategy
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -65,6 +67,13 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
                 running = downloadQueue.isQueueActive,
                 maxConcurrent = queueModel.maxConcurrent,
                 items = queueModel.queueItems,
+                schedulerEnabled = queueModel.scheduledTimes.enabledStartTime || queueModel.scheduledTimes.enabledEndTime,
+                activeDays = queueModel.scheduledTimes.daysOfWeek.map { it.name },
+                autoStartEnabled = queueModel.scheduledTimes.enabledStartTime,
+                startTime = queueModel.scheduledTimes.startTime.toString(),
+                autoStopEnabled = queueModel.scheduledTimes.enabledEndTime,
+                endTime = queueModel.scheduledTimes.endTime.toString(),
+                stopQueueOnEmpty = queueModel.stopQueueOnEmpty,
             )
         }
     }
@@ -93,7 +102,7 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
     override suspend fun addCategory(name: String, path: String, usePath: Boolean, fileTypes: List<String>, urlPatterns: List<String>): Long {
         val category = Category(-1L, name, "", path, usePath, fileTypes.map { it.trim().trimStart('.') }.filter { it.isNotBlank() }, urlPatterns.map { it.trim() }.filter { it.isNotBlank() })
         categoryManager.addCustomCategory(category)
-        return categoryManager.getCategories().last().id
+        return categoryManager.getCategories().maxByOrNull { it.id }?.id ?: error("Unable to determine new category ID")
     }
 
     override suspend fun renameCategory(id: Long, name: String) {
@@ -170,6 +179,30 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
     override suspend fun deleteQueue(id: Long) { queueManager.deleteQueue(id) }
     override suspend fun renameQueue(id: Long, name: String) { queueManager.getQueue(id).setName(name) }
     override suspend fun setQueueConcurrency(id: Long, maxConcurrent: Int) { require(maxConcurrent > 0); queueManager.getQueue(id).setMaxConcurrent(maxConcurrent) }
+
+    override suspend fun setQueueSchedule(
+        id: Long,
+        enabled: Boolean,
+        activeDays: List<String>,
+        autoStartEnabled: Boolean,
+        startTime: String,
+        autoStopEnabled: Boolean,
+        endTime: String,
+    ) {
+        val queue = queueManager.getQueue(id)
+        val current = queue.getQueueModel().scheduledTimes
+        val days = activeDays.map { DayOfWeek.valueOf(it) }.toSet().ifEmpty { current.daysOfWeek }
+        queue.setScheduledTimes {
+            copy(
+                daysOfWeek = days,
+                startTime = LocalTime.parse(startTime),
+                endTime = LocalTime.parse(endTime),
+                enabledStartTime = enabled && autoStartEnabled,
+                enabledEndTime = enabled && autoStopEnabled,
+            )
+        }
+    }
+
     override suspend fun assignDownloadToQueue(downloadId: Long, queueId: Long) { queueManager.addToQueue(queueId, downloadId) }
     override suspend fun removeDownloadFromQueue(downloadId: Long) { queueManager.findItemInQueue(downloadId)?.let { queueManager.getQueue(it).removeFromQueue(downloadId) } }
     override suspend fun moveQueueItem(downloadId: Long, direction: Int) { val qid = queueManager.findItemInQueue(downloadId) ?: return; queueManager.getQueue(qid).move(listOf(downloadId), direction) }
