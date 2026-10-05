@@ -1,4 +1,4 @@
-const state={page:"dashboard",pageSize:10,page:1,downloads:[],allDownloads:[],queues:[],connected:false,query:""};
+const state={page:"dashboard",pageSize:10,page:1,downloads:[],allDownloads:[],queues:[],connected:false,query:"",browserPath:"",browserItems:[]};
 state.downloads=[];
 
 const titles={dashboard:["Dashboard","Download manager overview"],downloads:["Downloads","All download tasks"],queue:["Queue","Manage download queues"],browser:["Browser","Repository and file browser"],categories:["Categories","Organize downloads"],scheduler:["Scheduler","Scheduled download rules"],settings:["Settings","ABDM service configuration"]};
@@ -56,8 +56,16 @@ function renderQueue(){
     </div>`;
   }).join("")}</div>${pagination(state.queues.length,p.pages)}`;
 }
+function renderBrowser(){
+  const p=paginate(state.browserItems);
+  const crumbs=state.browserPath?state.browserPath.split("/").filter(Boolean):[];
+  return `<div class="toolbar"><button class="secondary" onclick="browseTo('')">⌂ Root</button><button class="secondary" ${!state.browserPath?'disabled':''} onclick="browseParent()">↑ Up</button><div class="browser-path grow">/ ${crumbs.map(esc).join(" / ")}</div></div>
+  <div class="card table-wrap"><table class="table"><thead><tr><th>NAME</th><th>TYPE</th><th>SIZE</th><th>MODIFIED</th></tr></thead><tbody>${p.items.map(x=>`<tr ${x.directory?'class="clickable" onclick="browseTo('+JSON.stringify(x.path)+')"':''}><td class="name">${x.directory?'📁':'📄'} ${esc(x.name)}</td><td>${x.directory?'Folder':'File'}</td><td>${x.directory?'—':formatBytes(x.size)}</td><td>${x.modified?new Date(x.modified).toLocaleString():'—'}</td></tr>`).join("") || '<tr><td colspan="4" class="empty">This folder is empty.</td></tr>'}</tbody></table></div>${pagination(state.browserItems.length,p.pages)}`;
+}
 function renderSimple(name,text){return `<div class="card empty"><strong>${name}</strong>${text}</div>`}
-function render(){document.getElementById("page-title").textContent=titles[state.page][0];document.getElementById("page-subtitle").textContent=titles[state.page][1];document.querySelectorAll(".nav-item").forEach(x=>x.classList.toggle("active",x.dataset.page===state.page));let html=state.page==="dashboard"?renderDashboard():state.page==="downloads"?renderDownloads():state.page==="queue"?renderQueue():state.page==="browser"?renderSimple("Browser","Repository browsing will use the headless backend API."):state.page==="categories"?renderSimple("Categories","Create and manage download categories."):state.page==="scheduler"?renderSimple("Scheduler","Configure scheduled download rules."):settings();document.getElementById("app").innerHTML=html}
+window.browseTo=async function(path){try{const data=await ABDM_API.browser(path);state.browserPath=data.path||"";state.browserItems=Array.isArray(data.items)?data.items:[];state.page=1;render()}catch(e){alert("Browser error: "+e.message)}};
+window.browseParent=async function(){const p=state.browserPath.split("/").filter(Boolean);p.pop();await browseTo(p.join("/"))};
+function render(){document.getElementById("page-title").textContent=titles[state.page][0];document.getElementById("page-subtitle").textContent=titles[state.page][1];document.querySelectorAll(".nav-item").forEach(x=>x.classList.toggle("active",x.dataset.page===state.page));let html=state.page==="dashboard"?renderDashboard():state.page==="downloads"?renderDownloads():state.page==="queue"?renderQueue():state.page==="browser"?renderBrowser():state.page==="categories"?renderSimple("Categories","Create and manage download categories."):state.page==="scheduler"?renderSimple("Scheduler","Configure scheduled download rules."):settings();document.getElementById("app").innerHTML=html}
 function settings(){return `<div class="settings-grid"><div class="card"><div class="section-head"><h2>Backend API</h2></div><div class="form-grid"><label>API base URL<input value="${esc(window.ABDM_API.baseUrl)}" readonly></label><label>Connection status<input value="${state.connected?"Connected":"Not connected"}" readonly></label></div></div><div class="card"><div class="section-head"><h2>Storage</h2></div><div class="form-grid"><label>Downloads path<input value="/mnt/dataPool/abdm/downloads"></label><label>Temporary path<input value="/mnt/dataPool/abdm/temp"></label></div></div></div>`}
 window.setPage=n=>{state.page=Number(n);render()};window.setSize=n=>{state.pageSize=Number(n);state.page=1;render()};window.downloadAction=async function(id,action,removeFile=false){
   if(action==="remove"&&!confirm(removeFile?"Remove the download and delete its file?":"Remove this download from ABDM?"))return;
@@ -113,7 +121,7 @@ function formatEta(value){
   if(m)return m+"m "+s+"s";
   return s+"s";
 }
-document.getElementById("nav").addEventListener("click",e=>{const b=e.target.closest(".nav-item");if(b){state.page=b.dataset.page;state.page=1;render()}});
+document.getElementById("nav").addEventListener("click",e=>{const b=e.target.closest(".nav-item");if(b){state.page=b.dataset.page;state.page=1;render()}});\n
 document.getElementById("addBtn").onclick=async()=>{await loadQueues(true);refreshQueueSelect();document.getElementById("addDialog").showModal()};
 document.getElementById("addForm").addEventListener("submit",async e=>{e.preventDefault();const urls=document.getElementById("urlInput").value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);if(!urls.length)return;try{await ABDM_API.add({urls,folder:document.getElementById("pathInput").value,queueId:Number(document.getElementById("queueInput").value)||null});await loadDownloads(false);document.getElementById("addDialog").close();}catch(err){alert("Backend API error: "+err.message)}});
 async function connect(){try{await ABDM_API.ping();state.connected=true;await loadDownloads(true);await loadQueues(true);document.querySelector(".status-dot").classList.add("ok");document.getElementById("connection").textContent="Backend connected"}catch(e){document.getElementById("connection").textContent="Demo mode"}render()}
