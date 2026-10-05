@@ -4,7 +4,6 @@ import com.abdownloadmanager.desktop.di.Di
 import com.abdownloadmanager.desktop.repository.AppRepository
 import com.abdownloadmanager.desktop.utils.EntryType
 import com.abdownloadmanager.desktop.utils.EntrypointInitializer
-import com.abdownloadmanager.integration.Integration
 import com.abdownloadmanager.shared.util.ApiKeyUtil
 import com.abdownloadmanager.shared.util.DownloadSystem
 import kotlinx.coroutines.launch
@@ -20,7 +19,6 @@ import org.koin.core.component.inject
  */
 object HeadlessApp : KoinComponent {
     private val appRepository: AppRepository by inject()
-    private val integration: Integration by inject()
     private val downloadSystem: DownloadSystem by inject()
 
     @JvmStatic
