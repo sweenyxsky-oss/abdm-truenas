@@ -50,7 +50,7 @@ function renderQueue(){
         <div class="actions">
           <button class="icon-btn" title="Move up" ${i===0?'disabled':''} onclick="moveQueueItem(${d.id},-1)">↑</button>
           <button class="icon-btn" title="Move down" ${i===items.length-1?'disabled':''} onclick="moveQueueItem(${d.id},1)">↓</button>
-          <button class="icon-btn danger" title="Remove from queue" onclick="assignDownload(${d.id},0)">×</button>
+          <button class="icon-btn danger" title="Remove from queue" onclick="assignDownload(${d.id},null)">×</button>
         </div>
       </div>`).join(""):`<div class="empty">No downloads in this queue.</div>`}</div>
     </div>`;
