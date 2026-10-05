@@ -106,6 +106,18 @@ internal fun Application.setupRouting(
                 post("/delete") { integrationHandler.deleteQueue(call.parameters["id"]!!.toLong()); call.respondText("OK") }
                 post("/rename") { val body=json.decodeFromString<Map<String,String>>(call.receiveText()); integrationHandler.renameQueue(call.parameters["id"]!!.toLong(), body["name"] ?: "Queue"); call.respondText("OK") }
                 post("/concurrency") { val body=json.decodeFromString<Map<String,Int>>(call.receiveText()); integrationHandler.setQueueConcurrency(call.parameters["id"]!!.toLong(), body["maxConcurrent"] ?: 1); call.respondText("OK") }
+                post("/schedule") {
+                    val body = json.decodeFromString<Map<String, kotlinx.serialization.json.JsonElement>>(call.receiveText())
+                    val id = call.parameters["id"]!!.toLong()
+                    val enabled = body["enabled"]?.toString()?.toBooleanStrictOrNull() ?: false
+                    val activeDays = body["activeDays"]?.let { json.decodeFromJsonElement<List<String>>(it) } ?: emptyList()
+                    val autoStartEnabled = body["autoStartEnabled"]?.toString()?.toBooleanStrictOrNull() ?: false
+                    val startTime = body["startTime"]?.toString()?.trim('"') ?: "02:30"
+                    val autoStopEnabled = body["autoStopEnabled"]?.toString()?.toBooleanStrictOrNull() ?: false
+                    val endTime = body["endTime"]?.toString()?.trim('"') ?: "07:30"
+                    integrationHandler.setQueueSchedule(id, enabled, activeDays, autoStartEnabled, startTime, autoStopEnabled, endTime)
+                    call.respondText("OK")
+                }
             }
             route("/downloads/{id}") {
                 post("/pause") {
