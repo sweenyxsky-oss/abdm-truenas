@@ -240,6 +240,7 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
         startTime: String,
         autoStopEnabled: Boolean,
         endTime: String,
+        stopQueueOnEmpty: Boolean,
     ) {
         val queue = queueManager.getQueue(id)
         val current = queue.getQueueModel().scheduledTimes
@@ -252,6 +253,8 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
                 enabledStartTime = enabled && autoStartEnabled,
                 enabledEndTime = enabled && autoStopEnabled,
             )
+        }
+        queue.setStopQueueOnEmpty(stopQueueOnEmpty)
         }
     }
 
