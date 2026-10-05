@@ -102,12 +102,12 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
         appSettings.dynamicPartCreation.value = settings.dynamicPartCreation
         appSettings.useSparseFileAllocation.value = settings.sparseFileAllocation
         appSettings.useAverageSpeed.value = settings.useAverageSpeed
-        appSettings.appSettings.autoStartOnBoot.value = settings.autoStartOnBoot
-        appSettings.appSettings.useCategoryByDefault.value = settings.useCategoryByDefault
+        rawSettings.autoStartOnBoot.value = settings.autoStartOnBoot
+        rawSettings.useCategoryByDefault.value = settings.useCategoryByDefault
         appSettings.apiPort.value = settings.apiPort
         appSettings.apiAuthEnabled.value = settings.apiAuthEnabled
         appSettings.trackDeletedFilesOnDisk.value = settings.trackDeletedFilesOnDisk
-        appSettings.appSettings.deletePartialFileOnDownloadCancellation.value = settings.deletePartialFileOnDownloadCancellation
+        rawSettings.deletePartialFileOnDownloadCancellation.value = settings.deletePartialFileOnDownloadCancellation
         appSettings.apiEnabled.value = settings.apiEnabled
     }
 
