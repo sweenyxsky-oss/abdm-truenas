@@ -33,8 +33,9 @@ object HeadlessApp : KoinComponent {
 
             // Load persisted application settings and start the real downloader.
             appRepository.boot()
-            integration.boot()
+            // Fully boot the downloader and its queue/category state before exposing the HTTP API.
             downloadSystem.boot()
+            integration.boot()
 
             // First-run container defaults are written into ABDM's persistent settings.
             // AppRepository owns the Integration lifecycle, so do not call integration.enable()
