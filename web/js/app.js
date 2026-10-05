@@ -67,6 +67,70 @@ function renderCategories(){
   return `<div class="toolbar"><div class="grow"></div><button class="primary" onclick="createCategory()">＋ New category</button></div>
   <div class="card table-wrap"><table class="table"><thead><tr><th>NAME</th><th>PATH</th><th>FILE TYPES</th><th>ITEMS</th><th></th></tr></thead><tbody>${p.items.map(x=>`<tr><td><strong>${esc(x.name)}</strong>${x.defaultCategory?'<span class="tag" style="margin-left:8px">Default</span>':''}</td><td>${x.usePath?esc(x.path):'<span class="muted">Default download path</span>'}</td><td>${esc((x.acceptedFileTypes||[]).join(", ")||"All")}</td><td>${x.items?.length||0}</td><td><span class="actions"><button class="icon-btn" title="Rename" onclick="renameCategory(${x.id},${JSON.stringify(x.name)})">✎</button>${x.defaultCategory?'':'<button class="icon-btn danger" title="Delete" onclick="deleteCategory('+x.id+','+JSON.stringify(x.name)+')">✕</button>'}</span></td></tr>`).join("")}</tbody></table></div>${pagination(state.categories.length,p.pages)}`;
 }
+function renderSettings(){
+  const s=state.settings||{};
+  return `<div class="settings-grid">
+    <div class="card">
+      <div class="section-head"><div><h3>Downloads</h3><p>Core download behavior and storage.</p></div></div>
+      <div class="form-grid settings-form">
+        <label>Download folder<input id="set-folder" value="${esc(s.downloadFolder||"/downloads")}"></label>
+        <label>Maximum concurrent downloads<input id="set-concurrent" type="number" min="1" max="128" value="${s.maxConcurrentDownloads||4}"></label>
+        <label>Threads per download<input id="set-threads" type="number" min="1" max="128" value="${s.threadCount||8}"></label>
+        <label>Speed limit (bytes/sec)<input id="set-speed" type="number" min="0" value="${s.speedLimit||0}"></label>
+        <label>Maximum retry count<input id="set-retries" type="number" min="0" max="100" value="${s.maxDownloadRetryCount??5}"></label>
+      </div>
+      <div class="settings-checks">
+        <label><input id="set-dynamic" type="checkbox" ${s.dynamicPartCreation?"checked":""}> Dynamic part creation</label>
+        <label><input id="set-sparse" type="checkbox" ${s.sparseFileAllocation?"checked":""}> Sparse file allocation</label>
+        <label><input id="set-average" type="checkbox" ${s.useAverageSpeed?"checked":""}> Use average download speed</label>
+        <label><input id="set-category-default" type="checkbox" ${s.useCategoryByDefault?"checked":""}> Use categories by default</label>
+        <label><input id="set-autoboot" type="checkbox" ${s.autoStartOnBoot?"checked":""}> Start ABDM automatically on boot</label>
+        <label><input id="set-track" type="checkbox" ${s.trackDeletedFilesOnDisk?"checked":""}> Track deleted files on disk</label>
+        <label><input id="set-delete-partial" type="checkbox" ${s.deletePartialFileOnDownloadCancellation?"checked":""}> Delete partial files when cancelled</label>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-head"><div><h3>Web API</h3><p>Network access for the TrueNAS web interface.</p></div></div>
+      <div class="form-grid settings-form">
+        <label>API port<input id="set-port" type="number" min="1" max="65535" value="${s.apiPort||15151}"></label>
+        <label>API key<input id="set-key" type="password" autocomplete="new-password" placeholder="Leave blank to keep current key"></label>
+      </div>
+      <div class="settings-checks">
+        <label><input id="set-api-enabled" type="checkbox" ${s.apiEnabled?"checked":""}> Enable API</label>
+        <label><input id="set-api-auth" type="checkbox" ${s.apiAuthEnabled?"checked":""}> Require API key authentication</label>
+      </div>
+      <div class="settings-note">Changing the API port or authentication can temporarily disconnect this page.</div>
+    </div>
+  </div>
+  <div class="dialog-actions"><button class="primary" onclick="saveSettings()">Save settings</button></div>`;
+}
+window.saveSettings=async function(){
+  if(!state.settings)return;
+  const s={...state.settings,
+    downloadFolder:document.getElementById("set-folder").value.trim(),
+    maxConcurrentDownloads:Number(document.getElementById("set-concurrent").value),
+    threadCount:Number(document.getElementById("set-threads").value),
+    speedLimit:Number(document.getElementById("set-speed").value),
+    maxDownloadRetryCount:Number(document.getElementById("set-retries").value),
+    dynamicPartCreation:document.getElementById("set-dynamic").checked,
+    sparseFileAllocation:document.getElementById("set-sparse").checked,
+    useAverageSpeed:document.getElementById("set-average").checked,
+    useCategoryByDefault:document.getElementById("set-category-default").checked,
+    autoStartOnBoot:document.getElementById("set-autoboot").checked,
+    trackDeletedFilesOnDisk:document.getElementById("set-track").checked,
+    deletePartialFileOnDownloadCancellation:document.getElementById("set-delete-partial").checked,
+    apiEnabled:document.getElementById("set-api-enabled").checked,
+    apiPort:Number(document.getElementById("set-port").value),
+    apiAuthEnabled:document.getElementById("set-api-auth").checked
+  };
+  const key=document.getElementById("set-key").value.trim();
+  try{await ABDM_API.updateSettings(s,key||null);state.settings=s;alert("Settings saved.");render()}catch(e){alert("Settings update failed: "+e.message)}
+};
+async function loadSettings(quiet=true){
+  if(!state.connected)return;
+  try{state.settings=await ABDM_API.settings();if(state.page==="settings"&&!quiet)render()}catch(e){console.warn("Unable to load settings",e)}
+}
+
 function renderScheduler(){
   const p=paginate(state.queues);
   const days=[["MONDAY","Mon"],["TUESDAY","Tue"],["WEDNESDAY","Wed"],["THURSDAY","Thu"],["FRIDAY","Fri"],["SATURDAY","Sat"],["SUNDAY","Sun"]];
@@ -118,7 +182,7 @@ async function loadCategories(quiet=true){if(!state.connected)return;try{const i
 
 window.browseTo=async function(path){try{const data=await ABDM_API.browser(path);state.browserPath=data.path||"";state.browserItems=Array.isArray(data.items)?data.items:[];state.page=1;render()}catch(e){alert("Browser error: "+e.message)}};
 window.browseParent=async function(){const p=state.browserPath.split("/").filter(Boolean);p.pop();await browseTo(p.join("/"))};
-function render(){document.getElementById("page-title").textContent=titles[state.page][0];document.getElementById("page-subtitle").textContent=titles[state.page][1];document.querySelectorAll(".nav-item").forEach(x=>x.classList.toggle("active",x.dataset.page===state.page));let html=state.page==="dashboard"?renderDashboard():state.page==="downloads"?renderDownloads():state.page==="queue"?renderQueue():state.page==="browser"?renderBrowser():state.page==="categories"?renderCategories():state.page==="scheduler"?renderScheduler():settings();document.getElementById("app").innerHTML=html}
+function render(){document.getElementById("page-title").textContent=titles[state.page][0];document.getElementById("page-subtitle").textContent=titles[state.page][1];document.querySelectorAll(".nav-item").forEach(x=>x.classList.toggle("active",x.dataset.page===state.page));let html=state.page==="dashboard"?renderDashboard():state.page==="downloads"?renderDownloads():state.page==="queue"?renderQueue():state.page==="browser"?renderBrowser():state.page==="categories"?renderCategories():state.page==="scheduler"?renderScheduler():state.page==="settings"?renderSettings():renderSimple("Page","Coming soon.");document.getElementById("app").innerHTML=html}
 function settings(){return `<div class="settings-grid"><div class="card"><div class="section-head"><h2>Backend API</h2></div><div class="form-grid"><label>API base URL<input value="${esc(window.ABDM_API.baseUrl)}" readonly></label><label>Connection status<input value="${state.connected?"Connected":"Not connected"}" readonly></label></div></div><div class="card"><div class="section-head"><h2>Storage</h2></div><div class="form-grid"><label>Downloads path<input value="/mnt/dataPool/abdm/downloads"></label><label>Temporary path<input value="/mnt/dataPool/abdm/temp"></label></div></div></div>`}
 window.setPage=n=>{state.page=Number(n);render()};window.setSize=n=>{state.pageSize=Number(n);state.page=1;render()};window.downloadAction=async function(id,action,removeFile=false){
   if(action==="remove"&&!confirm(removeFile?"Remove the download and delete its file?":"Remove this download from ABDM?"))return;
@@ -179,4 +243,4 @@ document.getElementById("addBtn").onclick=async()=>{await loadQueues(true);refre
 document.getElementById("addForm").addEventListener("submit",async e=>{e.preventDefault();const urls=document.getElementById("urlInput").value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);if(!urls.length)return;try{await ABDM_API.add({urls,folder:document.getElementById("pathInput").value,queueId:Number(document.getElementById("queueInput").value)||null});await loadDownloads(false);document.getElementById("addDialog").close();}catch(err){alert("Backend API error: "+err.message)}});
 async function connect(){try{await ABDM_API.ping();state.connected=true;await loadDownloads(true);await loadQueues(true);await loadCategories(true);document.querySelector(".status-dot").classList.add("ok");document.getElementById("connection").textContent="Backend connected"}catch(e){document.getElementById("connection").textContent="Demo mode"}render()}
 render();connect();
-setInterval(()=>{loadDownloads(true);loadQueues(true);if(state.page==="categories"||state.page==="scheduler")loadQueues(true);if(state.page==="categories")loadCategories(true)},1500);
+setInterval(()=>{loadDownloads(true);loadQueues(true);if(state.page==="categories"||state.page==="scheduler")loadQueues(true);if(state.page==="categories")loadCategories(true);if(state.page==="settings")loadSettings(true)},1500);
