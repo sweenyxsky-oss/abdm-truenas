@@ -56,10 +56,11 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
             ApiQueueModel(
                 id = queueModel.id,
                 name = queueModel.name,
-                active = queueModel.queueItems.count { id -> downloadSystem.downloadMonitor.downloadListFlow.value.any { it.id == id && (it is ProcessingDownloadItemState) && it.status is DownloadJobStatus.Downloading } },
+                active = queueModel.queueItems.count { id -> downloadSystem.downloadMonitor.downloadListFlow.value.any { it.id == id && it is ProcessingDownloadItemState && (it.status is DownloadJobStatus.Downloading || it.status is DownloadJobStatus.Resuming) } },
                 queued = queueModel.queueItems.count { id -> downloadSystem.downloadMonitor.downloadListFlow.value.any { it.id == id && (it is ProcessingDownloadItemState) && it.status == DownloadJobStatus.IDLE } },
                 total = queueModel.queueItems.size,
                 running = downloadQueue.isQueueActive,
+                maxConcurrent = queueModel.maxConcurrent,
             )
         }
     }
