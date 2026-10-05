@@ -232,9 +232,9 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
     override fun stopQueue(id: Long) { queueManager.getQueue(id).stop() }
 
     override suspend fun addQueue(name: String): Long { queueManager.addQueue(name); return queueManager.getAll().maxOf { it.id } }
-    override suspend fun deleteQueue(id: Long) { queueManager.deleteQueue(id) }
+    override suspend fun deleteQueue(id: Long) { require(queueManager.canDelete(id)) { "Queue cannot be deleted" }; queueManager.deleteQueue(id) }
     override suspend fun renameQueue(id: Long, name: String) { queueManager.getQueue(id).setName(name) }
-    override suspend fun setQueueConcurrency(id: Long, maxConcurrent: Int) { require(maxConcurrent > 0); queueManager.getQueue(id).setMaxConcurrent(maxConcurrent) }
+    override suspend fun setQueueConcurrency(id: Long, maxConcurrent: Int) { require(maxConcurrent in 1..128); queueManager.getQueue(id).setMaxConcurrent(maxConcurrent) }
 
     override suspend fun setQueueSchedule(
         id: Long,
