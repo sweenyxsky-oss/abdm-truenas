@@ -156,7 +156,8 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
     }
 
     override suspend fun addCategory(name: String, path: String, usePath: Boolean, fileTypes: List<String>, urlPatterns: List<String>): Long {
-        val category = Category(-1L, name, "", path, usePath, fileTypes.map { it.trim().trimStart('.') }.filter { it.isNotBlank() }, urlPatterns.map { it.trim() }.filter { it.isNotBlank() })
+        require(name.isNotBlank())
+        val category = Category(-1L, name.trim(), "", path.trim(), usePath, fileTypes.map { it.trim().trimStart('.') }.filter { it.isNotBlank() }, urlPatterns.map { it.trim() }.filter { it.isNotBlank() })
         categoryManager.addCustomCategory(category)
         return categoryManager.getCategories().maxByOrNull { it.id }?.id ?: error("Unable to determine new category ID")
     }
@@ -231,9 +232,9 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
 
     override fun stopQueue(id: Long) { queueManager.getQueue(id).stop() }
 
-    override suspend fun addQueue(name: String): Long { queueManager.addQueue(name); return queueManager.getAll().maxOf { it.id } }
+    override suspend fun addQueue(name: String): Long { require(name.isNotBlank()); queueManager.addQueue(name.trim()); return queueManager.getAll().maxOf { it.id } }
     override suspend fun deleteQueue(id: Long) { require(queueManager.canDelete(id)) { "Queue cannot be deleted" }; queueManager.deleteQueue(id) }
-    override suspend fun renameQueue(id: Long, name: String) { queueManager.getQueue(id).setName(name) }
+    override suspend fun renameQueue(id: Long, name: String) { require(name.isNotBlank()); queueManager.getQueue(id).setName(name.trim()) }
     override suspend fun setQueueConcurrency(id: Long, maxConcurrent: Int) { require(maxConcurrent in 1..128); queueManager.getQueue(id).setMaxConcurrent(maxConcurrent) }
 
     override suspend fun setQueueSchedule(
