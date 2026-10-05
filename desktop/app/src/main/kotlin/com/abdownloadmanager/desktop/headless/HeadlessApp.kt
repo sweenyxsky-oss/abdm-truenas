@@ -6,7 +6,6 @@ import com.abdownloadmanager.desktop.utils.EntryType
 import com.abdownloadmanager.desktop.utils.EntrypointInitializer
 import com.abdownloadmanager.shared.util.ApiKeyUtil
 import com.abdownloadmanager.shared.util.DownloadSystem
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -58,11 +57,6 @@ object HeadlessApp : KoinComponent {
 
                 initMarker.parentFile?.mkdirs()
                 initMarker.writeText("initialized")
-            }
-
-            // Keep the download monitor hot so the web API always sees live state.
-            launch {
-                downloadSystem.downloadMonitor.downloadListFlow.collect { }
             }
 
             // Keep the JVM alive while Ktor/download coroutines run.
