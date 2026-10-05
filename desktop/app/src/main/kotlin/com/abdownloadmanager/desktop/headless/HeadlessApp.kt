@@ -41,6 +41,11 @@ object HeadlessApp : KoinComponent {
             val apiKey = System.getenv("ABDM_API_KEY")?.takeIf { it.isNotBlank() }
             integration.enable(IntegrationSettings(port = port, apiKey = apiKey))
 
+                // Keep the download monitor hot so the web API always sees live state.
+                launch {
+                    downloadSystem.downloadMonitor.downloadListFlow.collect { }
+                }
+
             // Keep the JVM alive while Ktor/download coroutines run.
             kotlinx.coroutines.awaitCancellation()
         }
