@@ -92,6 +92,15 @@ paths:
                 queueId:
                   type: integer
                   description: Optional queue ID to associate the task with
+                categoryId:
+                  type: integer
+                  description: Optional category ID
+                startDownload:
+                  type: boolean
+                  description: Start this download immediately when no queue is selected
+                startQueue:
+                  type: boolean
+                  description: Start the selected queue
       responses:
         "200":
           description: Successfully added the download task
@@ -137,6 +146,12 @@ paths:
       summary: Reset and retry a download
   /downloads/{id}/remove:
     post:
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
       summary: Remove a download
       parameters:
         - name: removeFile
@@ -241,9 +256,21 @@ paths:
       summary: Create a category
   /categories/{id}/rename:
     post:
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
       summary: Rename a category
   /categories/{id}/delete:
     post:
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
       summary: Delete a custom category
   /settings:
     get:
