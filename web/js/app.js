@@ -1,4 +1,4 @@
-const state={page:"dashboard",pageSize:10,page:1,downloads:[],allDownloads:[],queues:[],connected:false,query:"",browserPath:"",browserItems:[],categories:[]};
+const state={page:"dashboard",pageSize:10,page:1,downloads:[],allDownloads:[],queues:[],connected:false,query:"",browserPath:"",browserItems:[],categories:[],settings:null};
 state.downloads=[];
 
 const titles={dashboard:["Dashboard","Download manager overview"],downloads:["Downloads","All download tasks"],queue:["Queue","Manage download queues"],browser:["Browser","Repository and file browser"],categories:["Categories","Organize downloads"],scheduler:["Scheduler","Scheduled download rules"],settings:["Settings","ABDM service configuration"]};
@@ -157,6 +157,7 @@ function renderScheduler(){
         <div class="form-grid" style="margin-top:14px">
           <label style="display:flex;align-items:center;gap:9px"><input type="checkbox" id="sched-autostart-${q.id}" ${q.autoStartEnabled?"checked":""}> Automatically start queue</label>
           <label style="display:flex;align-items:center;gap:9px"><input type="checkbox" id="sched-autostop-${q.id}" ${q.autoStopEnabled?"checked":""}> Automatically stop queue</label>
+          <label style="display:flex;align-items:center;gap:9px"><input type="checkbox" id="sched-empty-${q.id}" ${q.stopQueueOnEmpty?"checked":""}> Stop queue when empty</label>
         </div>
         <div class="dialog-actions" style="margin-top:16px"><button class="primary" onclick="saveQueueSchedule(${q.id})">Save schedule</button></div>
       </div>
@@ -169,9 +170,10 @@ window.saveQueueSchedule=async function(id){
   const enabled=document.getElementById("sched-enabled-"+id).checked;
   const autoStartEnabled=document.getElementById("sched-autostart-"+id).checked;
   const autoStopEnabled=document.getElementById("sched-autostop-"+id).checked;
+  const stopQueueOnEmpty=document.getElementById("sched-empty-"+id).checked;
   const startTime=document.getElementById("sched-start-"+id).value||"02:30";
   const endTime=document.getElementById("sched-end-"+id).value||"07:30";
-  try{await ABDM_API.queueSchedule(id,{enabled,activeDays,autoStartEnabled,startTime,autoStopEnabled,endTime});await loadQueues(false)}catch(e){alert("Scheduler update failed: "+e.message)}
+  try{await ABDM_API.queueSchedule(id,{enabled,activeDays,autoStartEnabled,startTime,autoStopEnabled,endTime,stopQueueOnEmpty});await loadQueues(false)}catch(e){alert("Scheduler update failed: "+e.message)}
 };
 
 function renderSimple(name,text){return `<div class="card empty"><strong>${name}</strong>${text}</div>`}
@@ -240,7 +242,7 @@ function formatEta(value){
 }
 document.getElementById("nav").addEventListener("click",e=>{const b=e.target.closest(".nav-item");if(b){state.page=b.dataset.page;state.page=1;render();if(state.page==="browser")browseTo(state.browserPath)}}});\n
 document.getElementById("addBtn").onclick=async()=>{await loadQueues(true);refreshQueueSelect();document.getElementById("addDialog").showModal()};
-document.getElementById("addForm").addEventListener("submit",async e=>{e.preventDefault();const urls=document.getElementById("urlInput").value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);if(!urls.length)return;try{await ABDM_API.add({urls,folder:document.getElementById("pathInput").value,queueId:Number(document.getElementById("queueInput").value)||null});await loadDownloads(false);document.getElementById("addDialog").close();}catch(err){alert("Backend API error: "+err.message)}});
-async function connect(){try{await ABDM_API.ping();state.connected=true;await loadDownloads(true);await loadQueues(true);await loadCategories(true);document.querySelector(".status-dot").classList.add("ok");document.getElementById("connection").textContent="Backend connected"}catch(e){document.getElementById("connection").textContent="Demo mode"}render()}
+document.getElementById("addForm").addEventListener("submit",async e=>{e.preventDefault();const urls=document.getElementById("urlInput").value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);if(!urls.length)return;try{await ABDM_API.add({urls,folder:document.getElementById("pathInput").value,queueId:(document.getElementById("queueInput").value===""?null:Number(document.getElementById("queueInput").value))});await loadDownloads(false);document.getElementById("addDialog").close();}catch(err){alert("Backend API error: "+err.message)}});
+async function connect(){try{await ABDM_API.ping();state.connected=true;await loadDownloads(true);await loadQueues(true);await loadCategories(true);await loadSettings(true);document.querySelector(".status-dot").classList.add("ok");document.getElementById("connection").textContent="Backend connected"}catch(e){document.getElementById("connection").textContent="Demo mode"}render()}
 render();connect();
 setInterval(()=>{loadDownloads(true);loadQueues(true);if(state.page==="categories"||state.page==="scheduler")loadQueues(true);if(state.page==="categories")loadCategories(true);if(state.page==="settings")loadSettings(true)},1500);
