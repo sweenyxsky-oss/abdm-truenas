@@ -14,4 +14,6 @@ interface IntegrationHandler{
     suspend fun resumeDownload(id: Long)
     suspend fun retryDownload(id: Long)
     suspend fun removeDownload(id: Long, alsoRemoveFile: Boolean)
+    fun startQueue(id: Long)
+    fun stopQueue(id: Long)
 }
