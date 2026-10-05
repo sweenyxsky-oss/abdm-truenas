@@ -304,7 +304,7 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
             context = EmptyContext,
         )
         val categorySelectionMode = task.categoryId?.let { CategorySelectionMode.Fixed(it) }
-            ?: if (appSettings.useCategoryByDefault.value) CategorySelectionMode.Auto else null
+            ?: if (rawSettings.useCategoryByDefault.value) CategorySelectionMode.Auto else null
         val id = if (categorySelectionMode == null) {
             downloadSystem.addDownload(
                 newDownload = newDownload,
