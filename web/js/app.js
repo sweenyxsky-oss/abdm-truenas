@@ -100,7 +100,7 @@ function renderSettings(){
         <label><input id="set-api-enabled" type="checkbox" ${s.apiEnabled?"checked":""}> Enable web/API service</label>
         <label><input id="set-api-auth" type="checkbox" ${s.apiAuthEnabled?"checked":""}> Require API key authentication</label>
       </div>
-      <div class="settings-note">Changing the API port or authentication can temporarily disconnect this page.</div>
+      <div class="settings-note">Changing the API port requires matching the TrueNAS host/container port mapping in <code>docker-compose.truenas.yml</code>. Authentication changes can also temporarily disconnect this page.</div>
     </div>
   </div>
   <div class="dialog-actions"><button class="primary" onclick="saveSettings()">Save settings</button></div>`;
