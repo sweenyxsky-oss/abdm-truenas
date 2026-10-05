@@ -28,6 +28,12 @@
     <section id="app"></section>
   </main>
 
+  <dialog id="detailsDialog">
+    <div class="dialog-head"><div><h2 id="detailsTitle">Download details</h2><p id="detailsSubtitle"></p></div><button class="icon-btn" onclick="document.getElementById('detailsDialog').close()">×</button></div>
+    <div id="detailsBody"></div>
+    <div class="dialog-actions"><button class="secondary" onclick="document.getElementById('detailsDialog').close()">Close</button></div>
+  </dialog>
+
   <dialog id="addDialog">
     <form method="dialog" id="addForm">
       <div class="dialog-head"><div><h2>Add download</h2><p>Paste one or more URLs to add them to ABDM.</p></div><button class="icon-btn" value="cancel">×</button></div>
