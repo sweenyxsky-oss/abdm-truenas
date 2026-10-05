@@ -1,0 +1,6 @@
+.git
+.github
+.gradle
+build
+desktop/app/build
+**/.DS_Store
