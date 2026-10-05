@@ -15,6 +15,7 @@ import io.ktor.server.auth.authenticate
 import io.ktor.server.request.receiveText
 import io.ktor.server.response.respondText
 import io.ktor.server.http.content.staticResources
+import io.ktor.http.ContentType
 import io.ktor.server.routing.get
 import io.ktor.server.routing.route
 import io.ktor.server.routing.post
@@ -65,7 +66,7 @@ internal fun Application.setupRouting(
                 call.respondText("OK")
             }
             get("/settings") {
-                call.respondText(json.encodeToString(ApiSettingsModel.serializer(), integrationHandler.getSettings()))
+                call.respondText(json.encodeToString(ApiSettingsModel.serializer(), integrationHandler.getSettings(, ContentType.Application.Json))
             }
             post("/settings") {
                 val body = json.decodeFromString<Map<String, kotlinx.serialization.json.JsonElement>>(call.receiveText())
@@ -76,10 +77,10 @@ internal fun Application.setupRouting(
             }
             get("/browser") {
                 val path = call.request.queryParameters["path"]
-                call.respondText(json.encodeToString(ApiBrowserResponse.serializer(), integrationHandler.browse(path)))
+                call.respondText(json.encodeToString(ApiBrowserResponse.serializer(), integrationHandler.browse(path, ContentType.Application.Json))
             }
             get("/categories") {
-                call.respondText(json.encodeToString(ListSerializer(ApiCategoryModel.serializer()), integrationHandler.listCategories()))
+                call.respondText(json.encodeToString(ListSerializer(ApiCategoryModel.serializer(, ContentType.Application.Json), integrationHandler.listCategories()))
             }
             post("/categories") {
                 val body=json.decodeFromString<Map<String, kotlinx.serialization.json.JsonElement>>(call.receiveText())
@@ -88,7 +89,7 @@ internal fun Application.setupRouting(
                 val usePath=body["usePath"]?.toString()?.toBooleanStrictOrNull() ?: true
                 val fileTypes=body["fileTypes"]?.let { json.decodeFromJsonElement<List<String>>(it) } ?: emptyList()
                 val urlPatterns=body["urlPatterns"]?.let { json.decodeFromJsonElement<List<String>>(it) } ?: emptyList()
-                call.respondText(integrationHandler.addCategory(name,path,usePath,fileTypes,urlPatterns).toString())
+                call.respondText(integrationHandler.addCategory(name,path,usePath,fileTypes,urlPatterns).toString(), ContentType.Application.Json)
             }
             route("/categories/{id}") {
                 post("/rename") {
@@ -110,7 +111,7 @@ internal fun Application.setupRouting(
                 val jsonResponse = json.encodeToString(ListSerializer(ApiQueueModel.serializer()), queues)
                 call.respondText(jsonResponse)
             }
-            post("/queues") { val body=json.decodeFromString<Map<String,String>>(call.receiveText()); call.respondText(integrationHandler.addQueue(body["name"] ?: "New Queue").toString()) }
+            post("/queues") { val body=json.decodeFromString<Map<String,String>>(call.receiveText()); call.respondText(integrationHandler.addQueue(body["name"] ?: "New Queue").toString(), ContentType.Application.Json) }
             route("/queues/{id}") {
                 post("/start") {
                     integrationHandler.startQueue(call.parameters["id"]!!.toLong())
