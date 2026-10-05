@@ -126,7 +126,8 @@ internal fun Application.setupRouting(
                     val startTime = body["startTime"]?.toString()?.trim('"') ?: "02:30"
                     val autoStopEnabled = body["autoStopEnabled"]?.toString()?.toBooleanStrictOrNull() ?: false
                     val endTime = body["endTime"]?.toString()?.trim('"') ?: "07:30"
-                    integrationHandler.setQueueSchedule(id, enabled, activeDays, autoStartEnabled, startTime, autoStopEnabled, endTime)
+                    val stopQueueOnEmpty = body["stopQueueOnEmpty"]?.toString()?.toBooleanStrictOrNull() ?: false
+                    integrationHandler.setQueueSchedule(id, enabled, activeDays, autoStartEnabled, startTime, autoStopEnabled, endTime, stopQueueOnEmpty)
                     call.respondText("OK")
                 }
             }
