@@ -231,7 +231,7 @@ async function loadQueues(quiet=true){
     const items=await ABDM_API.queues();
     state.queues=Array.isArray(items)?items:[];refreshQueueSelect();
     if(state.page>Math.max(1,Math.ceil(state.queues.length/state.pageSize)))state.page=1;
-    if(!quiet)render();
+    if(!quiet||state.page==="dashboard"||state.page==="queue"||state.page==="scheduler")render();
   }catch(err){console.warn("Unable to load queues",err)}
 }
 async function loadDownloads(quiet=true){
@@ -240,7 +240,8 @@ async function loadDownloads(quiet=true){
     const items=await ABDM_API.downloads();
     state.allDownloads=(Array.isArray(items)?items:[]).map(x=>({id:x.id,name:x.name,size:formatBytes(x.size),progress:x.percent==null?0:x.percent,speed:formatSpeed(x.speed),eta:formatEta(x.eta),status:x.status,queueId:x.queueId,queueName:x.queueName,raw:x}));
     state.downloads=state.query?state.allDownloads.filter(x=>x.name.toLowerCase().includes(state.query)):state.allDownloads.slice();
-    if(!quiet)render();
+    const editingSearch=state.page==="downloads"&&document.activeElement?.classList.contains("search");
+    if(!quiet||state.page==="dashboard"||state.page==="queue"||(state.page==="downloads"&&!editingSearch))render();
   }catch(err){console.warn("Unable to load downloads",err)}
 }
 function formatBytes(value){
