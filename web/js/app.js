@@ -1,4 +1,4 @@
-const state={view:"dashboard",page:1,pageSize:10,downloads:[],allDownloads:[],queues:[],connected:false,query:"",browserPath:"",browserItems:[],categories:[],settings:null};
+const state={view:"dashboard",page:1,pageSize:10,downloads:[],allDownloads:[],queues:[],connected:false,query:"",browserPath:"",browserItems:[],categories:[],settings:null,lastReconnectAttempt:0};
 state.downloads=[];
 
 const titles={dashboard:["Dashboard","Download manager overview"],downloads:["Downloads","All download tasks"],queue:["Queue","Manage download queues"],browser:["Browser","Repository and file browser"],categories:["Categories","Organize downloads"],scheduler:["Scheduler","Scheduled download rules"],settings:["Settings","ABDM service configuration"]};
@@ -237,7 +237,7 @@ async function loadQueues(quiet=true){
     state.queues=Array.isArray(items)?items:[];refreshQueueSelect();
     if(state.page>Math.max(1,Math.ceil(state.queues.length/state.pageSize)))state.page=1;
     if(!quiet||state.view==="dashboard"||state.view==="queue"||state.view==="scheduler")render();
-  }catch(err){console.warn("Unable to load queues",err)}
+  }catch(err){console.warn("Unable to load queues",err);state.connected=false;document.getElementById("connection").textContent="Backend unavailable"}
 }
 async function loadDownloads(quiet=true){
   if(!state.connected)return;
@@ -247,7 +247,7 @@ async function loadDownloads(quiet=true){
     state.downloads=state.query?state.allDownloads.filter(x=>x.name.toLowerCase().includes(state.query)):state.allDownloads.slice();
     const editingSearch=state.view==="downloads"&&document.activeElement?.classList.contains("search");
     if(!quiet||state.view==="dashboard"||state.view==="queue"||(state.view==="downloads"&&!editingSearch))render();
-  }catch(err){console.warn("Unable to load downloads",err)}
+  }catch(err){console.warn("Unable to load downloads",err);state.connected=false;document.getElementById("connection").textContent="Backend unavailable"}
 }
 function formatBytes(value){
   if(value==null||value<0)return "—";
@@ -271,4 +271,17 @@ document.getElementById("addBtn").onclick=async()=>{await loadQueues(true);await
 document.getElementById("addForm").addEventListener("submit",async e=>{e.preventDefault();const urls=document.getElementById("urlInput").value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);if(!urls.length)return;try{await ABDM_API.add({urls,folder:document.getElementById("pathInput").value,queueId:(document.getElementById("queueInput").value===""?null:Number(document.getElementById("queueInput").value)),categoryId:(document.getElementById("categoryInput").value===""?null:Number(document.getElementById("categoryInput").value))});await loadDownloads(false);document.getElementById("addDialog").close();}catch(err){alert("Backend API error: "+err.message)}});
 async function connect(){try{await ABDM_API.ping();state.connected=true;await loadDownloads(true);await loadQueues(true);await loadCategories(true);await loadSettings(true);document.querySelector(".status-dot").classList.add("ok");document.getElementById("connection").textContent="Backend connected"}catch(e){document.getElementById("connection").textContent="Backend unavailable"}render()}
 render();connect();
-setInterval(()=>{loadDownloads(true);loadQueues(true);if(state.view==="categories")loadCategories(true);if(state.view==="settings")loadSettings(true)},1500);
+setInterval(()=>{
+  if(!state.connected){
+    const now=Date.now();
+    if(now-state.lastReconnectAttempt>=5000){
+      state.lastReconnectAttempt=now;
+      connect();
+    }
+    return;
+  }
+  loadDownloads(true);
+  loadQueues(true);
+  if(state.view==="categories")loadCategories(true);
+  if(state.view==="settings")loadSettings(true)
+},1500);
