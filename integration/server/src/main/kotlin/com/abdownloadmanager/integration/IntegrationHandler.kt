@@ -6,21 +6,12 @@ import com.abdownloadmanager.integration.model.ApiQueueModel
 import com.abdownloadmanager.integration.model.NewDownloadTask
 
 interface IntegrationHandler{
-    /**
-     * meant to be used by the browser / or when the app needs to use gui
-     * the app gui should be involved
-     */
     suspend fun addDownloadByGui(request: AddDownloadsFromIntegration)
-
-
     fun listQueues(): List<ApiQueueModel>
-
     fun listDownloads(): List<ApiDownloadModel>
-
-    /**
-     * manually add download
-     * all the necessary inputs provided by the cli/api
-     * simply add the download using download system
-     */
     suspend fun addDownload(task: NewDownloadTask): Long
+    suspend fun pauseDownload(id: Long)
+    suspend fun resumeDownload(id: Long)
+    suspend fun retryDownload(id: Long)
+    suspend fun removeDownload(id: Long, alsoRemoveFile: Boolean)
 }
