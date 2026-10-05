@@ -84,6 +84,8 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
                     downloadLink = item.downloadLink,
                     dateAdded = item.dateAdded, startTime = item.startTime,
                     completeTime = item.completeTime,
+                    queueId = queueManager.findItemInQueue(item.id),
+                    queueName = queueManager.findItemInQueue(item.id)?.let { queueManager.getQueue(it).getQueueModel().name },
                 )
                 is CompletedDownloadItemState -> ApiDownloadModel(
                     id = item.id, name = item.name, folder = item.folder,
