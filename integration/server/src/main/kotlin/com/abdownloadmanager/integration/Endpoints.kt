@@ -2,6 +2,7 @@ package com.abdownloadmanager.integration
 
 import com.abdownloadmanager.integration.model.AddDownloadsFromIntegration
 import com.abdownloadmanager.integration.model.ApiDownloadModel
+import com.abdownloadmanager.integration.model.ApiBrowserResponse
 import com.abdownloadmanager.integration.model.ApiQueueModel
 import com.abdownloadmanager.integration.model.NewDownloadTask
 import io.ktor.server.application.Application
@@ -59,7 +60,7 @@ internal fun Application.setupRouting(
                 }
                 call.respondText("OK")
             }
-            get("/downloads") {
+            get("/browser") {\n                val path = call.request.queryParameters["path"]\n                call.respondText(json.encodeToString(ApiBrowserResponse.serializer(), integrationHandler.browse(path)))\n            }\n            get("/downloads") {
                 val downloads = integrationHandler.listDownloads()
                 call.respondText(json.encodeToString(ListSerializer(ApiDownloadModel.serializer()), downloads))
             }
