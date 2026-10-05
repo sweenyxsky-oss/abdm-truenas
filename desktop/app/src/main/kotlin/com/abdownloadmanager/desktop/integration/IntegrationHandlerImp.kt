@@ -112,13 +112,21 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
     }
 
     override fun listQueues(): List<ApiQueueModel> {
+        val statesById = downloadSystem.downloadMonitor.downloadListFlow.value.associateBy { it.id }
         return queueManager.getAll().map { downloadQueue ->
             val queueModel = downloadQueue.getQueueModel()
             ApiQueueModel(
                 id = queueModel.id,
                 name = queueModel.name,
-                active = queueModel.queueItems.count { id -> downloadSystem.downloadMonitor.downloadListFlow.value.any { it.id == id && it is ProcessingDownloadItemState && (it.status is DownloadJobStatus.Downloading || it.status is DownloadJobStatus.Resuming) } },
-                queued = queueModel.queueItems.count { id -> downloadSystem.downloadMonitor.downloadListFlow.value.any { it.id == id && (it is ProcessingDownloadItemState) && it.status == DownloadJobStatus.IDLE } },
+                active = queueModel.queueItems.count { id ->
+                    val state = statesById[id]
+                    state is ProcessingDownloadItemState &&
+                        (state.status is DownloadJobStatus.Downloading || state.status is DownloadJobStatus.Resuming)
+                },
+                queued = queueModel.queueItems.count { id ->
+                    val state = statesById[id]
+                    state is ProcessingDownloadItemState && state.status == DownloadJobStatus.IDLE
+                },
                 total = queueModel.queueItems.size,
                 running = downloadQueue.isQueueActive,
                 maxConcurrent = queueModel.maxConcurrent,
@@ -174,7 +182,12 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
     }
 
     override fun listDownloads(): List<ApiDownloadModel> {
+        val queueMembership = queueManager.getAll().flatMap { queue ->
+            val model = queue.getQueueModel()
+            model.queueItems.map { itemId -> itemId to (model.id to model.name) }
+        }.toMap()
         return downloadSystem.downloadMonitor.downloadListFlow.value.map { item ->
+            val membership = queueMembership[item.id]
             when (item) {
                 is ProcessingDownloadItemState -> ApiDownloadModel(
                     id = item.id, name = item.name, folder = item.folder,
@@ -192,8 +205,8 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
                     downloadLink = item.downloadLink,
                     dateAdded = item.dateAdded, startTime = item.startTime,
                     completeTime = item.completeTime,
-                    queueId = queueManager.findItemInQueue(item.id),
-                    queueName = queueManager.findItemInQueue(item.id)?.let { queueManager.getQueue(it).getQueueModel().name },
+                    queueId = membership?.first,
+                    queueName = membership?.second,
                 )
                 is CompletedDownloadItemState -> ApiDownloadModel(
                     id = item.id, name = item.name, folder = item.folder,
