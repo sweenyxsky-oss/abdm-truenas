@@ -12,7 +12,9 @@ import io.ktor.server.auth.authenticate
 import io.ktor.server.request.receiveText
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
+import io.ktor.server.routing.route
 import io.ktor.server.routing.post
+import io.ktor.server.routing.parameter
 import io.ktor.server.routing.routing
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
@@ -66,6 +68,25 @@ internal fun Application.setupRouting(
                 val queues = integrationHandler.listQueues()
                 val jsonResponse = json.encodeToString(ListSerializer(ApiQueueModel.serializer()), queues)
                 call.respondText(jsonResponse)
+            }
+            route("/downloads/{id}") {
+                post("/pause") {
+                    integrationHandler.pauseDownload(call.parameters["id"]!!.toLong())
+                    call.respondText("OK")
+                }
+                post("/resume") {
+                    integrationHandler.resumeDownload(call.parameters["id"]!!.toLong())
+                    call.respondText("OK")
+                }
+                post("/retry") {
+                    integrationHandler.retryDownload(call.parameters["id"]!!.toLong())
+                    call.respondText("OK")
+                }
+                post("/remove") {
+                    val removeFile = call.request.queryParameters["removeFile"]?.toBoolean() ?: false
+                    integrationHandler.removeDownload(call.parameters["id"]!!.toLong(), removeFile)
+                    call.respondText("OK")
+                }
             }
             post("/start-headless-download") {
                 val itemsToAdd = kotlin.runCatching {
