@@ -4,7 +4,7 @@ state.downloads=[];
 const titles={dashboard:["Dashboard","Download manager overview"],downloads:["Downloads","All download tasks"],queue:["Queue","Manage download queues"],browser:["Browser","Repository and file browser"],categories:["Categories","Organize downloads"],scheduler:["Scheduler","Scheduled download rules"],settings:["Settings","ABDM service configuration"]};
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function jsAttrArg(s){return esc(JSON.stringify(String(s)))}
-function paginate(items){const start=(state.page-1)*state.pageSize;return {items:items.slice(start,start+state.pageSize),pages:Math.max(1,Math.ceil(items.length/state.pageSize)),start}}
+function paginate(items){const pages=Math.max(1,Math.ceil(items.length/state.pageSize));if(state.page>pages)state.page=pages;const start=(state.page-1)*state.pageSize;return {items:items.slice(start,start+state.pageSize),pages,start}}
 function pagination(total,pages){if(state.page>pages)state.page=pages;return `<div class="pagination"><span>Showing ${total?((state.page-1)*state.pageSize+1):0}–${Math.min(state.page*state.pageSize,total)} of ${total}</span><div class="pages">${Array.from({length:pages},(_,i)=>`<button class="${i+1===state.page?"active":""}" onclick="setPage(${i+1})">${i+1}</button>`).join("")}</div><label style="display:flex;align-items:center;gap:7px">Per page<select class="page-size" onchange="setSize(this.value)"><option value="10" ${state.pageSize===10?"selected":""}>10</option><option value="25" ${state.pageSize===25?"selected":""}>25</option><option value="50" ${state.pageSize===50?"selected":""}>50</option></select></label></div>`}
 function actionButtons(x){
   const id=Number(x.id);
