@@ -1,5 +1,6 @@
 window.ABDM_API={baseUrl:(window.ABDM_CONFIG&&window.ABDM_CONFIG.apiBaseUrl)||""};
 window.ABDM_API.request=async function(path,options={}){
+  const apiKey=localStorage.getItem("abdmApiKey");
   const r=await fetch(this.baseUrl.replace(/\/$/,"")+path,{...options,headers:{"Content-Type":"application/json",...(options.headers||{})}});
   if(!r.ok)throw new Error(r.status+" "+r.statusText);
   const text=await r.text();
