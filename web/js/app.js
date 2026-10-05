@@ -67,6 +67,49 @@ function renderCategories(){
   return `<div class="toolbar"><div class="grow"></div><button class="primary" onclick="createCategory()">＋ New category</button></div>
   <div class="card table-wrap"><table class="table"><thead><tr><th>NAME</th><th>PATH</th><th>FILE TYPES</th><th>ITEMS</th><th></th></tr></thead><tbody>${p.items.map(x=>`<tr><td><strong>${esc(x.name)}</strong>${x.defaultCategory?'<span class="tag" style="margin-left:8px">Default</span>':''}</td><td>${x.usePath?esc(x.path):'<span class="muted">Default download path</span>'}</td><td>${esc((x.acceptedFileTypes||[]).join(", ")||"All")}</td><td>${x.items?.length||0}</td><td><span class="actions"><button class="icon-btn" title="Rename" onclick="renameCategory(${x.id},${JSON.stringify(x.name)})">✎</button>${x.defaultCategory?'':'<button class="icon-btn danger" title="Delete" onclick="deleteCategory('+x.id+','+JSON.stringify(x.name)+')">✕</button>'}</span></td></tr>`).join("")}</tbody></table></div>${pagination(state.categories.length,p.pages)}`;
 }
+function renderScheduler(){
+  const p=paginate(state.queues);
+  const days=[["MONDAY","Mon"],["TUESDAY","Tue"],["WEDNESDAY","Wed"],["THURSDAY","Thu"],["FRIDAY","Fri"],["SATURDAY","Sat"],["SUNDAY","Sun"]];
+  return `<div class="toolbar"><div><strong>Queue scheduler</strong><span class="muted" style="margin-left:8px">Schedules are applied to each queue</span></div></div>
+  <div class="queue-grid">${p.items.map(q=>{
+    const activeDays=Array.isArray(q.activeDays)?q.activeDays:[];
+    const start=(q.startTime||"02:30").slice(0,5);
+    const end=(q.endTime||"07:30").slice(0,5);
+    return \`<div class="card queue-card">
+      <div class="queue-head"><div><h3>${esc(q.name)}</h3><small>${q.schedulerEnabled?"Scheduler enabled":"Scheduler disabled"} · ${q.autoStartEnabled?start+" start": "manual start"} · ${q.autoStopEnabled?end+" stop":"manual stop"}</small></div>
+      <span class="tag">${q.schedulerEnabled?"Enabled":"Disabled"}</span></div>
+      <div style="padding:16px 18px">
+        <div class="form-grid">
+          <label style="display:flex;align-items:center;gap:9px"><input type="checkbox" id="sched-enabled-${q.id}" ${q.schedulerEnabled?"checked":""}> Enable scheduler</label>
+          <label>Start time<input type="time" id="sched-start-${q.id}" value="${start}"></label>
+          <label>Stop time<input type="time" id="sched-end-${q.id}" value="${end}"></label>
+        </div>
+        <div style="margin-top:14px">
+          <div class="stat-label" style="margin-bottom:8px">Active days</div>
+          <div class="actions" style="flex-wrap:wrap">
+            ${days.map(([value,label])=>`<label style="display:flex;align-items:center;gap:5px"><input type="checkbox" class="sched-day-${q.id}" value="${value}" ${activeDays.includes(value)?"checked":""}> ${label}</label>`).join("")}
+          </div>
+        </div>
+        <div class="form-grid" style="margin-top:14px">
+          <label style="display:flex;align-items:center;gap:9px"><input type="checkbox" id="sched-autostart-${q.id}" ${q.autoStartEnabled?"checked":""}> Automatically start queue</label>
+          <label style="display:flex;align-items:center;gap:9px"><input type="checkbox" id="sched-autostop-${q.id}" ${q.autoStopEnabled?"checked":""}> Automatically stop queue</label>
+        </div>
+        <div class="dialog-actions" style="margin-top:16px"><button class="primary" onclick="saveQueueSchedule(${q.id})">Save schedule</button></div>
+      </div>
+    </div>\`
+  }).join("")}</div>${pagination(state.queues.length,p.pages)}`;
+}
+window.saveQueueSchedule=async function(id){
+  const activeDays=Array.from(document.querySelectorAll(".sched-day-"+id+":checked")).map(x=>x.value);
+  if(!activeDays.length){alert("Select at least one active day.");return}
+  const enabled=document.getElementById("sched-enabled-"+id).checked;
+  const autoStartEnabled=document.getElementById("sched-autostart-"+id).checked;
+  const autoStopEnabled=document.getElementById("sched-autostop-"+id).checked;
+  const startTime=document.getElementById("sched-start-"+id).value||"02:30";
+  const endTime=document.getElementById("sched-end-"+id).value||"07:30";
+  try{await ABDM_API.queueSchedule(id,{enabled,activeDays,autoStartEnabled,startTime,autoStopEnabled,endTime});await loadQueues(false)}catch(e){alert("Scheduler update failed: "+e.message)}
+};
+
 function renderSimple(name,text){return `<div class="card empty"><strong>${name}</strong>${text}</div>`}
 window.createCategory=async function(){const name=prompt("Category name","New Category");if(!name)return;const path=prompt("Download path","/downloads/"+name.replace(/\\s+/g,"_"));if(path===null)return;try{await ABDM_API.createCategory({name,path,usePath:true,fileTypes:[],urlPatterns:[]});await loadCategories(false)}catch(e){alert("Category creation failed: "+e.message)}};
 window.renameCategory=async function(id,name){const n=prompt("Category name",name);if(!n||n===name)return;try{await ABDM_API.renameCategory(id,n);await loadCategories(false)}catch(e){alert("Rename failed: "+e.message)}};
@@ -75,7 +118,7 @@ async function loadCategories(quiet=true){if(!state.connected)return;try{const i
 
 window.browseTo=async function(path){try{const data=await ABDM_API.browser(path);state.browserPath=data.path||"";state.browserItems=Array.isArray(data.items)?data.items:[];state.page=1;render()}catch(e){alert("Browser error: "+e.message)}};
 window.browseParent=async function(){const p=state.browserPath.split("/").filter(Boolean);p.pop();await browseTo(p.join("/"))};
-function render(){document.getElementById("page-title").textContent=titles[state.page][0];document.getElementById("page-subtitle").textContent=titles[state.page][1];document.querySelectorAll(".nav-item").forEach(x=>x.classList.toggle("active",x.dataset.page===state.page));let html=state.page==="dashboard"?renderDashboard():state.page==="downloads"?renderDownloads():state.page==="queue"?renderQueue():state.page==="browser"?renderBrowser():state.page==="categories"?renderCategories():state.page==="scheduler"?renderSimple("Scheduler","Configure scheduled download rules."):settings();document.getElementById("app").innerHTML=html}
+function render(){document.getElementById("page-title").textContent=titles[state.page][0];document.getElementById("page-subtitle").textContent=titles[state.page][1];document.querySelectorAll(".nav-item").forEach(x=>x.classList.toggle("active",x.dataset.page===state.page));let html=state.page==="dashboard"?renderDashboard():state.page==="downloads"?renderDownloads():state.page==="queue"?renderQueue():state.page==="browser"?renderBrowser():state.page==="categories"?renderCategories():state.page==="scheduler"?renderScheduler():settings();document.getElementById("app").innerHTML=html}
 function settings(){return `<div class="settings-grid"><div class="card"><div class="section-head"><h2>Backend API</h2></div><div class="form-grid"><label>API base URL<input value="${esc(window.ABDM_API.baseUrl)}" readonly></label><label>Connection status<input value="${state.connected?"Connected":"Not connected"}" readonly></label></div></div><div class="card"><div class="section-head"><h2>Storage</h2></div><div class="form-grid"><label>Downloads path<input value="/mnt/dataPool/abdm/downloads"></label><label>Temporary path<input value="/mnt/dataPool/abdm/temp"></label></div></div></div>`}
 window.setPage=n=>{state.page=Number(n);render()};window.setSize=n=>{state.pageSize=Number(n);state.page=1;render()};window.downloadAction=async function(id,action,removeFile=false){
   if(action==="remove"&&!confirm(removeFile?"Remove the download and delete its file?":"Remove this download from ABDM?"))return;
@@ -136,4 +179,4 @@ document.getElementById("addBtn").onclick=async()=>{await loadQueues(true);refre
 document.getElementById("addForm").addEventListener("submit",async e=>{e.preventDefault();const urls=document.getElementById("urlInput").value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);if(!urls.length)return;try{await ABDM_API.add({urls,folder:document.getElementById("pathInput").value,queueId:Number(document.getElementById("queueInput").value)||null});await loadDownloads(false);document.getElementById("addDialog").close();}catch(err){alert("Backend API error: "+err.message)}});
 async function connect(){try{await ABDM_API.ping();state.connected=true;await loadDownloads(true);await loadQueues(true);await loadCategories(true);document.querySelector(".status-dot").classList.add("ok");document.getElementById("connection").textContent="Backend connected"}catch(e){document.getElementById("connection").textContent="Demo mode"}render()}
 render();connect();
-setInterval(()=>{loadDownloads(true);loadQueues(true);if(state.page==="categories")loadCategories(true)},1500);
+setInterval(()=>{loadDownloads(true);loadQueues(true);if(state.page==="categories"||state.page==="scheduler")loadQueues(true);if(state.page==="categories")loadCategories(true)},1500);
