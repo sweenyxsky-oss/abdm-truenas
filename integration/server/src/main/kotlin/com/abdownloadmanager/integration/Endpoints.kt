@@ -14,6 +14,7 @@ import io.ktor.server.auth.apikey.apiKey
 import io.ktor.server.auth.authenticate
 import io.ktor.server.request.receiveText
 import io.ktor.server.response.respondText
+import io.ktor.server.http.content.staticResources
 import io.ktor.server.routing.get
 import io.ktor.server.routing.route
 import io.ktor.server.routing.post
