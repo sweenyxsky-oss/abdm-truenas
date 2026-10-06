@@ -20,9 +20,9 @@ window.ABDM_API.queues=async function(){return this.request("/queues")};
 window.ABDM_API.downloads=async function(){return this.request("/downloads")};
 window.ABDM_API.add=async function(payload){
   const urls=payload.urls||[];
-  return Promise.all(urls.map(link=>this.request("/start-headless-download",{
+  return Promise.all(urls.map((link,index)=>this.request("/start-headless-download",{
     method:"POST",
-    body:JSON.stringify({downloadSource:{link:link},folder:payload.folder||null,queueId:(payload.queueId===null||payload.queueId===undefined||payload.queueId==="")?null:Number(payload.queueId),categoryId:(payload.categoryId===null||payload.categoryId===undefined||payload.categoryId==="")?null:Number(payload.categoryId),startDownload:payload.queueId===null||payload.queueId===undefined||payload.queueId==="",startQueue:payload.queueId!==null&&payload.queueId!==undefined&&payload.queueId!==""})
+    body:JSON.stringify({downloadSource:{link:link},name:payload.names?.[index]||null,folder:payload.folder||null,queueId:(payload.queueId===null||payload.queueId===undefined||payload.queueId==="")?null:Number(payload.queueId),categoryId:(payload.categoryId===null||payload.categoryId===undefined||payload.categoryId==="")?null:Number(payload.categoryId),startDownload:payload.queueId===null||payload.queueId===undefined||payload.queueId==="",startQueue:payload.queueId!==null&&payload.queueId!==undefined&&payload.queueId!==""})
   })));
 };
 window.ABDM_API.control=async function(id,action,removeFile=false){return this.request("/downloads/"+encodeURIComponent(id)+"/"+action+(action==="remove"?"?removeFile="+removeFile:""),{method:"POST"})};
@@ -48,3 +48,6 @@ window.ABDM_API.queueSchedule=async function(id,data){return this.request("/queu
 
 window.ABDM_API.settings=async function(){return this.request("/settings")};
 window.ABDM_API.updateSettings=async function(settings,apiKey){return this.request("/settings",{method:"POST",body:JSON.stringify({settings,apiKey:apiKey||null})})};
+
+window.ABDM_API.updateDownload=async function(id,data){return this.request("/downloads/"+encodeURIComponent(id),{method:"POST",body:JSON.stringify(data)})};
+window.ABDM_API.inspectLinks=async function(text){return this.request("/import-links",{method:"POST",body:JSON.stringify({text})})};
