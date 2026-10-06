@@ -19,4 +19,11 @@ data class ApiDownloadModel(
     val completeTime: Long,
     val queueId: Long?,
     val queueName: String?,
+    val connections: Int = 0,
+    val maxConnections: Int? = null,
+    val categoryName: String? = null,
+    val errorTitle: String? = null,
+    val errorDescription: String? = null,
+    val errorSuggestion: String? = null,
+    val errorMessage: String? = null,
 )
