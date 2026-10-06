@@ -7,6 +7,7 @@ import com.abdownloadmanager.integration.model.ApiCategoryModel
 import com.abdownloadmanager.integration.model.ApiQueueModel
 import com.abdownloadmanager.integration.model.ApiSettingsModel
 import com.abdownloadmanager.integration.model.NewDownloadTask
+import com.abdownloadmanager.integration.model.ApiLinkInfo
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.auth.Authentication
@@ -104,6 +105,7 @@ internal fun Application.setupRouting(
                     call.respondText("OK")
                 }
             }
+            post("/import-links") { val body=json.decodeFromString<Map<String,String>>(call.receiveText()); call.respondText(json.encodeToString(ListSerializer(ApiLinkInfo.serializer()), integrationHandler.inspectDownloadLinks(body["text"].orEmpty())), ContentType.Application.Json) }
             get("/downloads") {
                 val downloads = integrationHandler.listDownloads()
                 call.respondText(json.encodeToString(ListSerializer(ApiDownloadModel.serializer()), downloads), ContentType.Application.Json)
@@ -141,6 +143,13 @@ internal fun Application.setupRouting(
                 }
             }
             route("/downloads/{id}") {
+                post {
+                    val body=json.decodeFromString<Map<String, kotlinx.serialization.json.JsonElement>>(call.receiveText())
+                    val link=body["link"]?.toString()?.trim('"') ?: error("Missing link")
+                    val connections=body["preferredConnectionCount"]?.toString()?.toIntOrNull()
+                    integrationHandler.updateDownload(call.parameters["id"]!!.toLong(),link,connections)
+                    call.respondText("OK")
+                }
                 post("/pause") {
                     integrationHandler.pauseDownload(call.parameters["id"]!!.toLong())
                     call.respondText("OK")
