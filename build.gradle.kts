@@ -83,4 +83,4 @@ val createReleaseFolderForCi = tasks.register("createReleaseFolderForCi") {
 
 // ======= end of GitHub action stuff
 
-// The upstream project currently contains a large set of legacy Kotlin compiler warnings.\n// Keep CI output clean while retaining Gradle failures for actual compilation errors.\ntasks.withType<KotlinCompilationTask<*>>().configureEach {\n    compilerOptions.freeCompilerArgs.add("-nowarn")\n}\n
+// The upstream project currently contains a large set of legacy Kotlin compiler warnings.\n// Keep CI output clean while retaining Gradle failures for actual compilation errors.\ntasks.withType<KotlinCompilationTask<*>>().configureEach {\n    compilerOptions.suppressWarnings.set(true)\n}\n
