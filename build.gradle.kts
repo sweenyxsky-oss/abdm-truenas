@@ -4,6 +4,7 @@ import io.github.z4kn4fein.semver.toVersion
 import io.github.z4kn4fein.semver.toVersionOrNull
 import ir.amirab.git_version.core.semanticVersionRegex
 import org.jetbrains.changelog.Changelog
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     ir.amirab.`git-version-plugin`
@@ -81,3 +82,5 @@ val createReleaseFolderForCi = tasks.register("createReleaseFolderForCi") {
 }
 
 // ======= end of GitHub action stuff
+
+// The upstream project currently contains a large set of legacy Kotlin compiler warnings.\n// Keep CI output clean while retaining Gradle failures for actual compilation errors.\ntasks.withType<KotlinCompile>().configureEach {\n    compilerOptions.freeCompilerArgs.add("-nowarn")\n}\n
