@@ -104,24 +104,25 @@ class DefaultAppIPCServiceImpl : IDefaultAppIPCService, KoinComponent {
         awaitAppBoot()
         return downloadSystem.queueManager.queues.value
             .asSequence()
-            .map { it.queueModel.value }
-            .map {
+            .map { queue ->
+                val model = queue.getQueueModel()
+                val schedule = model.scheduledTimes
                 ApiQueueModel(
-                    id = it.id,
-                    name = it.name,
+                    id = model.id,
+                    name = model.name,
                     active = 0,
-                    queued = it.queueItems.size,
-                    total = it.queueItems.size,
-                    running = false,
-                    maxConcurrent = it.maxConcurrent,
-                    items = it.queueItems,
-                    schedulerEnabled = false,
-                    activeDays = emptyList(),
-                    autoStartEnabled = false,
-                    startTime = "00:00",
-                    autoStopEnabled = false,
-                    endTime = "00:00",
-                    stopQueueOnEmpty = it.stopQueueOnEmpty,
+                    queued = model.queueItems.size,
+                    total = model.queueItems.size,
+                    running = queue.isQueueActive,
+                    maxConcurrent = model.maxConcurrent,
+                    items = model.queueItems,
+                    schedulerEnabled = schedule.enabledStartTime || schedule.enabledEndTime,
+                    activeDays = schedule.daysOfWeek.map { it.name },
+                    autoStartEnabled = schedule.enabledStartTime,
+                    startTime = schedule.startTime.toString(),
+                    autoStopEnabled = schedule.enabledEndTime,
+                    endTime = schedule.endTime.toString(),
+                    stopQueueOnEmpty = model.stopQueueOnEmpty,
                 )
             }
             .toList()
