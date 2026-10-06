@@ -2,7 +2,7 @@ FROM eclipse-temurin:25-jdk AS build
 RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates && rm -rf /var/lib/apt/lists/*
 WORKDIR /src
 COPY . .
-RUN chmod +x ./gradlew && ./gradlew :desktop:app:createReleaseDistributable --no-daemon --warning-mode=none
+RUN chmod +x ./gradlew && set -o pipefail; ./gradlew :desktop:app:createReleaseDistributable --no-daemon --warning-mode=none 2>&1 | tee /tmp/gradle-build.log | sed -E '/(^|[[:space:]])w: /d; /Deprecated Gradle features were used in this build/d; /You can use.*warning-mode all/d'
 
 FROM debian:bookworm-slim
 LABEL org.opencontainers.image.source="https://github.com/sweenyxsky-oss/abdm-truenas"
