@@ -21,17 +21,14 @@
     <div class="sidebar-footer"><span class="status-dot"></span><span id="connection">Connecting…</span></div>
   </aside>
   <main class="main">
-    <header class="topbar">
-      <div><h1 id="page-title">Dashboard</h1><p id="page-subtitle">Download manager overview</p></div>
-      <button class="primary" id="addBtn">＋ Add download</button>
-    </header>
+    <header class="topbar"><div class="topbar-left"><button class="menu-btn" id="menuBtn" aria-label="Menu">☰</button><div><h1 id="page-title">Dashboard</h1><p id="page-subtitle">Download manager overview</p></div></div><div class="actions"><button class="secondary" id="importBtn">⇧ Import TXT</button><button class="primary" id="addBtn">＋ Add download</button></div></header>
     <section id="app"></section>
   </main>
 
   <dialog id="detailsDialog">
     <div class="dialog-head"><div><h2 id="detailsTitle">Download details</h2><p id="detailsSubtitle"></p></div><button class="icon-btn" onclick="document.getElementById('detailsDialog').close()">×</button></div>
     <div id="detailsBody"></div>
-    <div class="dialog-actions"><button class="secondary" onclick="document.getElementById('detailsDialog').close()">Close</button></div>
+    <div class="dialog-actions"><button class="secondary" onclick="document.getElementById('detailsDialog').close()">Close</button><button class="primary" id="saveDetailsBtn">Save changes</button></div>
   </dialog>
 
   <dialog id="addDialog">
@@ -42,7 +39,9 @@
       <div class="dialog-actions"><button class="secondary" value="cancel">Cancel</button><button class="primary" id="submitDownload" value="default">Add download</button></div>
     </form>
   </dialog>
+  <dialog id="importDialog"><form method="dialog" id="importForm"><div class="dialog-head"><div><h2>Import download list</h2><p>Select a TXT file containing one URL per line.</p></div><button class="icon-btn" value="cancel">×</button></div><div style="padding:18px 20px"><input id="importFile" type="file" accept=".txt,text/plain"><div id="importPreview" style="margin-top:14px;max-height:45vh;overflow:auto"></div></div><div class="dialog-actions"><button class="secondary" value="cancel">Cancel</button><button class="primary" value="default">Start selected</button></div></form></dialog>
   <script src="js/api.js"></script>
   <script src="js/app.js"></script>
+  <script>document.getElementById("menuBtn").onclick=()=>document.querySelector(".sidebar").classList.toggle("open");document.getElementById("nav").addEventListener("click",()=>document.querySelector(".sidebar").classList.remove("open"));</script>
 </body>
 </html>
