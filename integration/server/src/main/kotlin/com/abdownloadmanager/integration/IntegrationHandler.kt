@@ -4,6 +4,7 @@ import com.abdownloadmanager.integration.model.AddDownloadsFromIntegration
 import com.abdownloadmanager.integration.model.ApiDownloadModel
 import com.abdownloadmanager.integration.model.ApiBrowserResponse
 import com.abdownloadmanager.integration.model.ApiCategoryModel
+import com.abdownloadmanager.integration.model.ApiLinkInfo
 import com.abdownloadmanager.integration.model.ApiQueueModel
 import com.abdownloadmanager.integration.model.ApiSettingsModel
 import com.abdownloadmanager.integration.model.NewDownloadTask
