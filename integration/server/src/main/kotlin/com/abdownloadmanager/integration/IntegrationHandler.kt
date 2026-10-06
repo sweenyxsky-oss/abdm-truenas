@@ -20,6 +20,8 @@ interface IntegrationHandler{
     suspend fun renameCategory(id: Long, name: String)
     suspend fun deleteCategory(id: Long)
     suspend fun addDownload(task: NewDownloadTask): Long
+    suspend fun updateDownload(id: Long, link: String, preferredConnectionCount: Int?)
+    suspend fun inspectDownloadLinks(text: String): List<ApiLinkInfo>
     suspend fun pauseDownload(id: Long)
     suspend fun resumeDownload(id: Long)
     suspend fun retryDownload(id: Long)
