@@ -83,6 +83,10 @@ internal fun Application.setupRouting(
                 val path = call.request.queryParameters["path"]
                 call.respondText(json.encodeToString(ApiBrowserResponse.serializer(), integrationHandler.browse(path)), ContentType.Application.Json)
             }
+            get("/browser/session") {
+                val port = System.getenv("ABDM_BROWSER_PORT")?.toIntOrNull()?.takeIf { it in 1024..65535 } ?: 15153
+                call.respondText("""{"enabled":true,"port":$port}""", ContentType.Application.Json)
+            }
             get("/categories") {
                 call.respondText(json.encodeToString(ListSerializer(ApiCategoryModel.serializer()), integrationHandler.listCategories()), ContentType.Application.Json)
             }
