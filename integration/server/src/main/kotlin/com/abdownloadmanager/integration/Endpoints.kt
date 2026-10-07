@@ -96,7 +96,11 @@ internal fun Application.setupRouting(
                 call.respondText(json.encodeToString(ApiBrowserResponse.serializer(), integrationHandler.browse(path)), ContentType.Application.Json)
             }
             get("/browser/session") {
-                val ready = runCatching { Socket("127.0.0.1", 5900).use { true } }.getOrDefault(false)
+                val vncReady = runCatching { Socket("127.0.0.1", 5900).use { true } }.getOrDefault(false)
+                val chromiumReady = runCatching {
+                    File("/config/system/browser/chromium.pid").readText().trim().toLongOrNull()?.let { pid -> ProcessHandle.of(pid).map { it.isAlive }.orElse(false) } ?: false
+                }.getOrDefault(false)
+                val ready = vncReady && chromiumReady
                 if (!ready) {
                     call.respondText("{\"enabled\":false,\"ready\":false}", ContentType.Application.Json, HttpStatusCode.ServiceUnavailable)
                 } else {
