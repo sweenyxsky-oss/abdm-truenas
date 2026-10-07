@@ -84,12 +84,11 @@ function renderQueue(){
 }
 function renderBrowser(){
   const session=state.browserSession;
-  if(!session?.enabled){
-    return '<div class="card empty"><strong>Browser is starting</strong><span>Chromium display information is not available yet. Try opening the Browser tab again in a moment.</span></div>';
+  if(!session?.enabled||!session?.ready){
+    return '<div class="card empty"><strong>Browser is starting</strong><span>The Chromium/noVNC session is not ready yet. Open this tab again in a moment.</span></div>';
   }
-  const host=window.location.hostname;
-  const port=Number(session.port)||15153;
-  const url=window.location.protocol+"//"+host+":"+port+"/vnc.html?autoconnect=true&resize=remote&path=websockify";
+  const token=encodeURIComponent(session.token||"");
+  const url=window.location.origin+"/browser/novnc/vnc.html?autoconnect=true&resize=remote&path=browser/websockify&token="+token;
   return '<div class="browser-shell">'+
     '<div class="browser-head"><div><strong>Chromium</strong><span>Real Chromium session · downloads are captured by ABDM</span></div><button class="secondary" onclick="reloadBrowser()">Reload browser</button></div>'+
     '<div class="browser-frame-wrap"><iframe class="browser-frame" src="'+esc(url)+'" title="Chromium browser" allow="clipboard-read; clipboard-write"></iframe></div>'+
@@ -97,7 +96,8 @@ function renderBrowser(){
 }
 window.reloadBrowser=async function(){
   try{
-    await ABDM_API.browserSession();
+    state.browserSession=null;
+    await loadBrowserSession(false);
     render();
   }catch(e){alert("Browser is unavailable: "+e.message)}
 }
