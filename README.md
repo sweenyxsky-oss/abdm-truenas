@@ -1,205 +1,64 @@
-<div align="center">
-  <a href="https://abdownloadmanager.com" target="_blank">
-    <img width="180" src="assets/logo/app_logo_with_background.svg" alt="AB Download Manager Logo">
-  </a>
-</div>
-<h1 align="center">AB Download Manager</h1>
-<p align="center">
-    <a href="https://github.com/amir1376/ab-download-manager/releases/latest"><img alt="GitHub Release" src="https://img.shields.io/github/v/release/amir1376/ab-download-manager?color=greenlight&label=latest%20release"></a>
-    <a href="https://abdownloadmanager.com"><img alt="AB Download Manager Website" src="https://img.shields.io/badge/project-website-purple?&labelColor=gray"></a>
-    <a href="https://t.me/abdownloadmanager"><img alt="Telegram Channel" src="https://img.shields.io/badge/Telegram-Channel-blue?logo=telegram&labelColor=gray"></a>
-    <a href="https://t.me/abdownloadmanager_discussion"><img alt="Telegram Group" src="https://img.shields.io/badge/Telegram-Group-blue?logo=telegram&labelColor=gray"></a>
-    <a href="https://crowdin.com/project/ab-download-manager"><img alt="Crowdin" src="https://badges.crowdin.net/ab-download-manager/localized.svg"></a>
-</p>
+# AB Download Manager — TrueNAS SCALE Edition
 
-<a href="https://abdownloadmanager.com" target="_blank">
-    <img alt="AB Download Manager Banner" src="assets/banners/app_banner.png"/>
-</a>
+A TrueNAS SCALE-focused fork of [AB Download Manager](https://github.com/amir1376/ab-download-manager).
 
-## Introduction
+This repository provides a **headless TrueNAS deployment** of AB Download Manager with a web interface served directly by the application. It is designed to run as a TrueNAS Custom App / Docker container without a desktop environment, Xvfb, or noVNC.
 
-[AB Download Manager](https://abdownloadmanager.com) is a desktop app that helps you manage and organize your downloads more efficiently than ever before.
+## What is included
 
-## Features
-
-- ⚡️ Faster Download Speed
-- ⏰ Queues and Schedulers
-- 🌐 Browser Extensions
-- 💻 Multiplatform (Android / Windows / Linux / Mac)
-- 🌙 Multiple Themes (Dark/Light/Black and more) with modern UI
-- ❤️ Free and Open Source
-
-Please visit [Project Website](https://abdownloadmanager.com) for more info.
-
-## Installation
-
-<a href="https://github.com/amir1376/ab-download-manager/releases/latest"><img alt="GitHub Release" src="https://img.shields.io/github/v/release/amir1376/ab-download-manager?color=greenlight&label=latest%20release"></a>
-
-### Download and Install the App
-
-<a href="https://abdownloadmanager.com"><img src="https://img.shields.io/badge/Official%20Website-897BFF?logo=abdownloadmanager&logoColor=fff&style=flat-square" alt="Official Website" height="32" /></a>
-<a href="https://github.com/amir1376/ab-download-manager/releases/latest"><img src="https://img.shields.io/badge/GitHub%20Releases-2a2f36?logo=github&logoColor=fff&style=flat-square" alt="GitHub Releases" height="32" /></a>
-
-#### Installation script (Linux)
-
-The recommended way to install the app on Linux
-
-```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/amir1376/ab-download-manager/master/scripts/install.sh)
-```
-
-#### Winget or Scoop (for Windows)
-
-**winget**:
-
-```bash
-winget install amir1376.ABDownloadManager
-```
-
-**scoop**:
-
-```bash
-scoop install extras/abdownloadmanager
-```
-
-#### Homebrew (for macOS & Linux)
-
-```bash
-brew tap amir1376/tap && brew install --cask ab-download-manager
-```
-
-> ⚠️ **Warning:** This software is NOT on Google Play or other app stores unless listed here. Any version **claiming to be or related to this project** should be considered SCAM and UNSAFE.
-
-For alternative installation methods, uninstallation instructions, and more details, please refer to the [wiki](https://github.com/amir1376/ab-download-manager/wiki/) page.
-
-### Browser Extensions
-
-<a href="https://addons.mozilla.org/en-US/firefox/addon/ab-download-manager/"><img src="https://img.shields.io/amo/v/ab-download-manager?label=Firefox&logo=firefoxbrowser" alt="Firefox Add-ons Version"></a>
-<a href="https://chromewebstore.google.com/detail/bbobopahenonfdgjgaleledndnnfhooj"> <img src="https://img.shields.io/chrome-web-store/v/bbobopahenonfdgjgaleledndnnfhooj?label=Chrome&logo=googlechrome" alt="Chrome Web Store Version"></a>
-
-You can download the browser extension to integrate the app with your browser.
-
-<p align="left">
-<a href="https://addons.mozilla.org/firefox/addon/ab-download-manager/">
-    <picture>
-        <img alt="Chrome Extension" src="./assets/banners/firefox-extension.png" height="48">
-    </picture>
-</a>
-<a href="https://chromewebstore.google.com/detail/bbobopahenonfdgjgaleledndnnfhooj">
-    <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="./assets/banners/chrome-extension_dark.png" height="48">
-        <source media="(prefers-color-scheme: light)" srcset="./assets/banners/chrome-extension_light.png" height="48">
-        <img alt="Chrome Extension" src="./assets/banners/chrome-extension_light.png" height="48">
-    </picture>
-</a>
-</p>
-
-## Screenshots
-
-<div align="center">
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="./assets/screenshots/app-home_dark.png">
-  <source media="(prefers-color-scheme: light)" srcset="./assets/screenshots/app-home_light.png">
-  <img alt="App Home Section" src="./assets/screenshots/app-home_dark.png">
-</picture>
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="./assets/screenshots/app-download_dark.png">
-  <source media="(prefers-color-scheme: light)" srcset="./assets/screenshots/app-download_light.png">
-  <img alt="App Download Section" src="./assets/screenshots/app-download_dark.png">
-</picture>
-</div>
-
-## Community
-
-- 📢 [Telegram Channel](https://t.me/abdownloadmanager) – News, announcements, and release updates.
-- 💬 [Telegram Group](https://t.me/abdownloadmanager_discussion) – Get help, report bugs, suggest features, and discuss
-  the project with the community.
-
-## Repositories And Source Code
-
-There are multiple repositories related to the **AB Download Manager** project:
-
-| Repository                                                                                 | Description                                                                   |
-|--------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------|
-| [Main Application](https://github.com/amir1376/ab-download-manager) (You are here)         | Contains the  **Application** that runs on your  **device**                   |
-| [Browser Integration](https://github.com/amir1376/ab-download-manager-browser-integration) | Contains the **Browser Extension** to be installed on your  **browser**       |
-| [Website](https://github.com/amir1376/ab-download-manager-website)                         | Contains the **AB Download Manager** [website](https://abdownloadmanager.com) |
-
-I've spent a lot of time to create this project.
-
-If you like my work, please consider giving it a ⭐ — thanks! ❤️
-
-## Bug Report
-
-If you notice any bugs in the source code, please report them via the `GitHub Issues` section.
-
-## Build From Source
-
-To compile and test the desktop app on your local machine,
-follow these steps:
-
-1. Clone the project.
-2. Download and extract the [JBR](https://github.com/JetBrains/JetBrainsRuntime/releases), and make it available by either:
-    
-    - Adding it to your `PATH`, or
-    - Setting the `JAVA_HOME` environment variable to its installation path.
-  
-3. Navigate to the project directory, open your terminal and execute the following command:
-
-    ```bash
-    ./gradlew createReleaseFolderForCi
-    ```
-
-4. The output will be available at:
-
-    ```
-    <project_dir>/build/ci-release
-    ```
-
-> **Note**. This project is compiled and published by GitHub actions [here](./.github/workflows/publish.yml), so if you
-> faced any problem you can check that too.
-
-## Translations
-
-<a href="https://crowdin.com/project/ab-download-manager"><img alt="Crowdin" src="https://badges.crowdin.net/ab-download-manager/localized.svg"></a>
-
-If you’d like to help translate AB Download Manager into another language, or improve existing translations, you can do
-so on Crowdin. Here’s how:
-
-- Visit the project in [Crowdin](https://crowdin.com/project/ab-download-manager)
-- Please DO NOT submit translations via pull requests.
-- If you want to add a new language, please see [this](https://github.com/amir1376/ab-download-manager/issues/144).
-
-## Contribution
-
-If you want to contribute to this project, please read [Contributing Guide](CONTRIBUTING.md) first.
-
-## Support the Project
-
-If you'd like to support the project, you can find details on how to donate in the [DONATE.md](DONATE.md) file.
-
-## TrueNAS SCALE Web/Headless Edition
-
-This branch adds a native headless runtime and a web interface designed for TrueNAS SCALE. The web UI is served directly by the ABDM Ktor service, so no desktop GUI, Xvfb, or noVNC is required.
-
-### Features
-
-- Live dashboard with download progress, speed, and ETA
-- Download pause, resume, retry, and removal
-- Queue creation, rename, ordering, concurrency, and start/stop controls
-- Per-queue scheduling with active days, start/stop times, and stop-when-empty
+- Headless AB Download Manager runtime for TrueNAS SCALE
+- Web interface served by the ABDM service
+- Download dashboard with progress, speed and ETA
+- Pause, resume, retry, remove and bulk download actions
+- Download queues and queue controls
+- Queue scheduling
 - Categories
-- Repository/file browser rooted at the configured download directory
-- Settings for storage, concurrency, retry behavior, API, and download behavior
-- Pagination with 10 / 25 / 50 items across list pages
-- Same-origin web UI served from the ABDM container
+- Download/file browser
+- Persistent configuration and download storage
+- Configurable download connections
+- API-key authentication support
+- Import links from TXT
+- Download details and direct-link editing
+- Mobile-friendly web UI
+- Docker image published to GitHub Container Registry (GHCR)
 
-### TrueNAS storage layout
+## Project structure
 
-Recommended datasets:
+The repository is based on the upstream AB Download Manager source tree. The TrueNAS-specific work is primarily located in:
 
+```text
+abdm-truenas/
+├── desktop/                  # Desktop/runtime application source
+├── integration/              # API/integration models and endpoints
+├── truenas/                  # TrueNAS-specific integration
+├── web/                      # TrueNAS web interface
+├── Dockerfile                # TrueNAS container build
+├── docker-entrypoint.sh      # Container startup
+├── docker-compose.truenas.yml
+└── .github/
+    └── workflows/
+        └── truenas-image.yml # TrueNAS Docker build/publish workflow
 ```
+
+### Important build detail
+
+The TrueNAS Docker image is built from the **desktop application runtime**:
+
+```text
+:desktop:app:createReleaseDistributable
+```
+
+The container does **not** use the `truenas/app` module as the standalone runtime. TrueNAS-specific integration code is included in the application build.
+
+---
+
+# Using the TrueNAS container
+
+## Recommended storage layout
+
+Create persistent datasets/directories similar to:
+
+```text
 dataPool
 └── abdm
     ├── config
@@ -207,29 +66,359 @@ dataPool
     └── temp
 ```
 
-The container expects these paths:
+The container paths are:
 
-- `/config` — persistent ABDM settings and application data
-- The `ABDM_DOWNLOAD_FOLDER` container variable is applied on first initialization; later changes should be made in the web Settings page.
-- `/downloads` — completed and active downloads
-- `/temp` — temporary download data
+| Container path | Purpose |
+|---|---|
+| `/config` | Persistent ABDM configuration and application data |
+| `/downloads` | Download destination |
+| `/temp` | Temporary download data |
 
-### Custom App deployment
+The container runs as UID/GID **568**, which matches the normal TrueNAS Apps user.
 
-TrueNAS SCALE 25.10 supports installing custom applications from Docker Compose YAML. The ready-to-use example is:
+For example:
 
+```bash
+sudo mkdir -p /mnt/dataPool/abdm/config
+sudo mkdir -p /mnt/dataPool/abdm/downloads
+sudo mkdir -p /mnt/dataPool/abdm/temp
+
+sudo chown -R 568:568 /mnt/dataPool/abdm
+sudo chmod -R u+rwX /mnt/dataPool/abdm
 ```
+
+Adjust the dataset path to match your TrueNAS installation.
+
+## Environment variables
+
+The container uses:
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `HOME` | `/config` | Persistent application home |
+| `ABDM_API_HOST` | `0.0.0.0` | API/web bind address |
+| `ABDM_API_PORT` | `15151` | Web/API port |
+| `ABDM_DOWNLOAD_FOLDER` | `/downloads` | Initial download directory |
+| `TZ` | `Asia/Riyadh` | Container timezone |
+
+The download directory is normally configured from the web Settings page after initialization.
+
+## TrueNAS Custom App
+
+The repository contains:
+
+```text
 docker-compose.truenas.yml
 ```
 
-The default web/API port is **15151**. If the service is reachable beyond a trusted LAN, enable **Require API key authentication** in Settings (or provide `ABDM_API_KEY` on first boot). API keys should be protected and HTTPS should be used when crossing an untrusted network.
+A typical deployment maps:
 
-Open:
-
+```text
+TrueNAS host                  Container
+--------------------------------------------
+/mnt/dataPool/abdm/config  -> /config
+/mnt/dataPool/abdm/downloads -> /downloads
+/mnt/dataPool/abdm/temp    -> /temp
+TrueNAS port 15152          -> 15151
 ```
-http://TRUENAS-IP:15151/
+
+After deployment, open:
+
+```text
+http://TRUENAS-IP:15152/
 ```
 
-The container image is built by GitHub Actions and published to GHCR. The GHCR package must be publicly pullable for the unauthenticated Compose example to work; otherwise configure registry credentials in TrueNAS.
+Use whatever host port you configured.
 
-> The repository's Docker image build is intended for the TrueNAS headless deployment. The regular desktop application remains available through the upstream desktop build configuration.
+If the application is exposed outside a trusted LAN, enable **Require API key authentication** and use HTTPS through an appropriate reverse proxy.
+
+---
+
+# Building the Docker image
+
+There are two supported approaches.
+
+## 1. Build with GitHub Actions — recommended
+
+The repository contains:
+
+```text
+.github/workflows/truenas-image.yml
+```
+
+The workflow:
+
+1. Checks out the repository.
+2. Sets up Docker Buildx.
+3. Logs in to GitHub Container Registry.
+4. Builds the TrueNAS Docker image.
+5. Pushes the image to GHCR.
+
+The workflow runs on:
+
+- pushes to `truenas-web`
+- tags matching `v*`
+- manual `workflow_dispatch`
+
+### Image name
+
+```text
+ghcr.io/sweenyxsky-oss/abdm-truenas
+```
+
+Branch builds are tagged:
+
+```text
+ghcr.io/sweenyxsky-oss/abdm-truenas:truenas-web
+```
+
+The `truenas-web` branch also updates:
+
+```text
+ghcr.io/sweenyxsky-oss/abdm-truenas:latest
+```
+
+Version tags such as `v0.2` produce:
+
+```text
+ghcr.io/sweenyxsky-oss/abdm-truenas:v0.2
+```
+
+## 2. Build locally with Docker
+
+From the repository root:
+
+```bash
+docker build -t abdm-truenas:local .
+```
+
+The Dockerfile performs the application build automatically.
+
+The build stage runs:
+
+```bash
+./gradlew :desktop:app:createReleaseDistributable --no-daemon --warning-mode=none
+```
+
+The resulting application is copied into the runtime image.
+
+Run the image locally:
+
+```bash
+docker run --rm -it \
+  -p 15151:15151 \
+  -e HOME=/config \
+  -e ABDM_API_HOST=0.0.0.0 \
+  -e ABDM_API_PORT=15151 \
+  -e ABDM_DOWNLOAD_FOLDER=/downloads \
+  -v "$PWD/config:/config" \
+  -v "$PWD/downloads:/downloads" \
+  -v "$PWD/temp:/temp" \
+  abdm-truenas:local
+```
+
+Then open:
+
+```text
+http://localhost:15151/
+```
+
+---
+
+# Building the application without Docker
+
+The project uses Gradle and the included Gradle wrapper.
+
+Make sure a compatible JDK is installed. The TrueNAS Docker build currently uses:
+
+```text
+Eclipse Temurin JDK 25
+```
+
+From the repository root:
+
+```bash
+chmod +x ./gradlew
+./gradlew :desktop:app:createReleaseDistributable --no-daemon
+```
+
+For the exact TrueNAS container build, use Docker because the Dockerfile also installs the required Linux runtime libraries and packages the application into the final image.
+
+---
+
+# GitHub Actions build flow
+
+The complete TrueNAS build is:
+
+```text
+Git push
+   │
+   ▼
+GitHub Actions
+   │
+   ├── Checkout source
+   ├── Docker Buildx
+   ├── Gradle application build
+   │      └── :desktop:app:createReleaseDistributable
+   │
+   ├── Build runtime image
+   │
+   └── Push to GHCR
+          │
+          ▼
+ghcr.io/sweenyxsky-oss/abdm-truenas
+```
+
+The Docker image is a multi-stage build:
+
+```text
+Eclipse Temurin 25 JDK
+        │
+        │ Gradle build
+        ▼
+ABDownloadManager distributable
+        │
+        ▼
+Debian Bookworm Slim runtime
+        │
+        ▼
+TrueNAS container image
+```
+
+---
+
+# Updating a TrueNAS deployment
+
+For a Custom App using:
+
+```text
+ghcr.io/sweenyxsky-oss/abdm-truenas:truenas-web
+```
+
+pull the latest image:
+
+```bash
+sudo docker pull ghcr.io/sweenyxsky-oss/abdm-truenas:truenas-web
+```
+
+TrueNAS should then be used to redeploy/restart the Custom App so that the container is recreated from the new image.
+
+Check the running container:
+
+```bash
+sudo docker ps
+```
+
+Check logs:
+
+```bash
+sudo docker logs --tail 100 <container-name>
+```
+
+Do not manually edit the generated Docker Compose files under `/mnt/.ix-apps`. TrueNAS owns those generated files.
+
+---
+
+# Versioning and stable releases
+
+Stable versions should be created from a commit that has successfully completed the **Build TrueNAS image** GitHub Actions workflow.
+
+Example:
+
+```text
+v0.2
+ │
+ └── exact tested source commit
+       │
+       └── GitHub Actions: successful
+             │
+             └── GHCR: ghcr.io/sweenyxsky-oss/abdm-truenas:v0.2
+```
+
+For development, use the `truenas-web` branch.
+
+For stable releases, use a version tag such as:
+
+```bash
+git tag -a v0.2 <COMMIT> -m "ABDM TrueNAS v0.2"
+git push origin v0.2
+```
+
+The GitHub Actions workflow automatically recognizes `v*` tags and publishes the corresponding Docker image.
+
+---
+
+# Development
+
+The recommended development flow is:
+
+```text
+truenas-web
+    │
+    ├── Make changes
+    │
+    ├── Commit
+    │
+    ├── GitHub Actions build
+    │
+    ├── Deploy/test on a separate TrueNAS Custom App
+    │
+    └── Promote to stable release when verified
+```
+
+For TrueNAS testing, use a separate Custom App rather than replacing a known-working deployment.
+
+This makes it possible to test a new image without risking the existing application data or configuration.
+
+---
+
+# Backup policy
+
+Before major changes, create a Git branch pointing to the last known-good commit.
+
+Example:
+
+```bash
+git branch backup/<description> <KNOWN-GOOD-COMMIT>
+git push origin backup/<description>
+```
+
+A stable backup should always point to the **exact source commit used to build the tested image**.
+
+---
+
+# Security
+
+The web interface provides access to download management and filesystem-related functionality.
+
+Recommended:
+
+- Keep the application on a trusted LAN unless protected by HTTPS and authentication.
+- Enable API-key authentication when the service is not strictly local.
+- Do not expose the API directly to the public Internet.
+- Protect the `/config` and `/downloads` datasets with appropriate TrueNAS permissions.
+- Use a reverse proxy for HTTPS if remote access is required.
+
+---
+
+# Upstream project
+
+This project is based on **AB Download Manager** by Amir1376.
+
+Upstream project:
+
+https://github.com/amir1376/ab-download-manager
+
+Official website:
+
+https://abdownloadmanager.com
+
+This fork adds TrueNAS SCALE-oriented headless/container deployment and web-management functionality while retaining the upstream application architecture.
+
+---
+
+# License
+
+See the repository's existing license files and the upstream AB Download Manager project for the applicable licensing terms.
+
+Changes made specifically for the TrueNAS edition remain part of this fork.
