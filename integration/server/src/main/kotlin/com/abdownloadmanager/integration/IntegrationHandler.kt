@@ -2,6 +2,7 @@ package com.abdownloadmanager.integration
 
 import com.abdownloadmanager.integration.model.AddDownloadsFromIntegration
 import com.abdownloadmanager.integration.model.ApiDownloadModel
+import com.abdownloadmanager.integration.model.ApiDownloadPart
 import com.abdownloadmanager.integration.model.ApiBrowserResponse
 import com.abdownloadmanager.integration.model.ApiCategoryModel
 import com.abdownloadmanager.integration.model.ApiLinkInfo
@@ -15,6 +16,7 @@ interface IntegrationHandler{
     suspend fun updateSettings(settings: ApiSettingsModel, apiKey: String?)
     fun listQueues(): List<ApiQueueModel>
     fun listDownloads(): List<ApiDownloadModel>
+    fun listDownloadParts(id: Long): List<ApiDownloadPart>
     fun browse(path: String?): ApiBrowserResponse
     fun listCategories(): List<ApiCategoryModel>
     suspend fun addCategory(name: String, path: String, usePath: Boolean, fileTypes: List<String>, urlPatterns: List<String>): Long
