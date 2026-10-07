@@ -2,7 +2,7 @@
 
 A TrueNAS SCALE-focused fork of [AB Download Manager](https://github.com/amir1376/ab-download-manager).
 
-This repository provides a **headless TrueNAS deployment** of AB Download Manager with a web interface served directly by the application. It is designed to run as a TrueNAS Custom App / Docker container without a desktop environment, Xvfb, or noVNC.
+This repository provides a **headless TrueNAS deployment** of AB Download Manager with a web interface served directly by the application. It is designed to run as a TrueNAS Custom App / Docker container without a host desktop environment. The optional Browser page runs an isolated Chromium session inside the container using Xvfb and a same-origin noVNC/WebSocket proxy.
 
 ## What is included
 
@@ -20,6 +20,9 @@ This repository provides a **headless TrueNAS deployment** of AB Download Manage
 - Import links from TXT
 - Download details and direct-link editing
 - Mobile-friendly web UI
+- Built-in Chromium browser session with download-capture extension
+- Same-origin noVNC display proxy (no separate browser-display port)
+- Persistent browser diagnostics under `/config/system/browser`
 - Docker image published to GitHub Container Registry (GHCR)
 
 ## Project structure
@@ -133,6 +136,41 @@ Use whatever host port you configured.
 If the application is exposed outside a trusted LAN, enable **Require API key authentication** and use HTTPS through an appropriate reverse proxy.
 
 ---
+
+
+### Built-in Browser
+
+The Browser page is fully containerized. You do **not** install Chromium on the TrueNAS host.
+
+Inside the container:
+
+```text
+ABDM web UI (15151)
+        │
+        ├── /browser/novnc  → noVNC static files
+        │
+        └── /browser/websockify → authenticated WebSocket proxy → localhost:5900
+                                      │
+                                      ▼
+                               x11vnc → Xvfb
+                                      │
+                                      ▼
+                                  Chromium
+```
+
+The raw VNC port is bound to localhost and is not published by Docker. Browser display traffic stays on the normal ABDM web/API origin, so the Browser page also works when the ABDM web interface is accessed over HTTPS through a reverse proxy.
+
+Browser diagnostics are persisted at:
+
+```text
+/config/system/browser/
+├── browser-startup.log
+├── chromium.log
+├── x11vnc.log
+└── xvfb.log
+```
+
+If the Browser page reports that Chromium is still starting, check those files from the `/config` dataset rather than installing packages on TrueNAS.
 
 # Building the Docker image
 
