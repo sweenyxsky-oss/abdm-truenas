@@ -51,3 +51,5 @@ window.ABDM_API.updateSettings=async function(settings,apiKey){return this.reque
 
 window.ABDM_API.updateDownload=async function(id,data){return this.request("/downloads/"+encodeURIComponent(id),{method:"POST",body:JSON.stringify(data)})};
 window.ABDM_API.inspectLinks=async function(text){return this.request("/import-links",{method:"POST",body:JSON.stringify({text})})};
+
+window.ABDM_API.downloadParts=async function(id){return this.request("/downloads/"+encodeURIComponent(id)+"/parts")};
