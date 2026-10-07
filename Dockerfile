@@ -27,7 +27,7 @@ ENV HOME=/config \
     TZ=Asia/Riyadh \
     ABDM_DOWNLOAD_FOLDER=/downloads
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    chromium xvfb x11vnc novnc websockify dbus-x11 fonts-liberation \
+    chromium xvfb x11vnc novnc websockify netcat-openbsd dbus-x11 fonts-liberation \
     libx11-6 libxext6 libxrender1 libxtst6 libxi6 libgl1 libfontconfig1 libfreetype6 libasound2 \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /opt/abdm
