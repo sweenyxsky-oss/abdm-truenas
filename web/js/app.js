@@ -20,11 +20,35 @@ function table(items){const ids=items.map(x=>Number(x.id));const allChecked=ids.
 function selectionToolbar(){const count=state.selectedIds.size;if(!count)return "";return `<div class="selection-toolbar"><strong>${count} selected</strong><button class="secondary" onclick="selectedAction('pause')">Pause</button><button class="secondary" onclick="selectedAction('resume')">Start</button><button class="secondary" onclick="selectedAction('remove')">Cancel / Remove</button><button class="secondary danger-action" onclick="selectedAction('remove',true)">Delete files</button><button class="icon-btn" title="Clear selection" onclick="clearSelection()">×</button></div>`}
 function renderDashboard(){
   const dp=paginate(state.allDownloads);
+  const categories=state.categories||[];
+  const queues=state.queues||[];
   const active=state.allDownloads.filter(x=>["Downloading","Preparing","Retrying"].includes(x.status)).length;
-  const queued=state.allDownloads.filter(x=>x.status==="Queued").length;
-  const done=state.allDownloads.filter(x=>x.status==="Completed").length;
   const speed=state.allDownloads.reduce((n,x)=>n+Number(x.raw?.speed||0),0);
-  return `<div class="grid stats"><div class="card"><div class="stat-label">Active downloads</div><div class="stat-value">${active}</div><div class="stat-extra">Currently transferring</div></div><div class="card"><div class="stat-label">Queued</div><div class="stat-value">${queued}</div><div class="stat-extra">Waiting to start</div></div><div class="card"><div class="stat-label">Completed</div><div class="stat-value">${done}</div><div class="stat-extra">Finished downloads</div></div><div class="card"><div class="stat-label">Current speed</div><div class="stat-value">${formatSpeed(speed)}</div><div class="stat-extra">Combined active speed</div></div></div><div class="section-head" style="margin-top:16px"><h2>Latest downloads</h2><span>${state.connected?"Live":"Offline"}</span></div>${selectionToolbar()}<div class="latest-downloads-scroll">${table(dp.items)}</div>${pagination(state.allDownloads.length,dp.pages)}`;
+  const categoryItems=cat=>state.allDownloads.filter(x=>Number(x.raw?.categoryId??x.categoryId)===Number(cat.id)).length;
+  return '<div class="abdm-home">'+
+    '<aside class="home-sidebar">'+
+      '<div class="home-sidebar-title">Categories</div>'+
+      '<button class="home-filter active"><span class="home-filter-icon">◉</span><span>All downloads</span><b>'+state.allDownloads.length+'</b></button>'+
+      '<button class="home-filter"><span class="home-filter-icon">↓</span><span>Downloading</span><b>'+active+'</b></button>'+
+      '<button class="home-filter"><span class="home-filter-icon">✓</span><span>Completed</span><b>'+state.allDownloads.filter(x=>x.status==="Completed").length+'</b></button>'+
+      '<button class="home-filter"><span class="home-filter-icon">!</span><span>Error</span><b>'+state.allDownloads.filter(x=>x.status==="Error").length+'</b></button>'+
+      '<div class="home-divider"></div>'+
+      categories.map(cat=>'<button class="home-filter"><span class="home-filter-icon">▱</span><span>'+esc(cat.name)+'</span><b>'+categoryItems(cat)+'</b></button>').join('')+
+      '<div class="home-sidebar-title queue-title">Queues</div>'+
+      queues.map(q=>'<button class="home-filter"><span class="home-filter-icon">☷</span><span>'+esc(q.name)+'</span><b>'+(q.queued||0)+'</b></button>').join('')+
+    '</aside>'+
+    '<section class="home-content">'+
+      '<div class="home-toolbar"><div class="home-toolbar-left">'+
+        '<button class="home-add" onclick="document.getElementById(\'addBtn\').click()">＋ <span>Add URL</span></button>'+
+        '<button class="home-tool" title="Start selected" onclick="selectedAction(\'resume\')">▶</button>'+
+        '<button class="home-tool" title="Pause selected" onclick="selectedAction(\'pause\')">Ⅱ</button>'+
+        '<button class="home-tool" title="Remove selected" onclick="selectedAction(\'remove\')">×</button>'+
+      '</div><div class="home-search"><span>⌕</span><input id="homeSearch" placeholder="Search downloads" value="'+esc(state.query)+'" oninput="filterDownloads(this.value)"></div></div>'+
+      selectionToolbar()+
+      '<div class="home-table-wrap">'+table(dp.items)+'</div>'+
+      (state.allDownloads.length?pagination(state.allDownloads.length,dp.pages):'<div class="abdm-empty"><div class="abdm-empty-icon">↓</div><strong>No downloads</strong><span>Add a URL to start downloading.</span></div>')+
+      '<div class="home-footer"><span>Downloads: <b>'+state.allDownloads.length+'</b></span><span>Active: <b>'+active+'</b></span><span class="footer-spacer"></span><span>Speed: <b>'+formatSpeed(speed)+'</b></span></div>'+
+    '</section></div>';
 }
 function renderDownloads(){
   const p=paginate(state.downloads);
