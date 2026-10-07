@@ -24,16 +24,20 @@ import ir.amirab.downloader.downloaditem.hls.HLSDownloadCredentials
 import ir.amirab.downloader.downloaditem.http.HttpDownloadCredentials
 import ir.amirab.downloader.monitor.CompletedDownloadItemState
 import ir.amirab.downloader.monitor.ProcessingDownloadItemState
+import ir.amirab.downloader.part.PartDownloadStatus
 import ir.amirab.downloader.queue.QueueManager
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalTime
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
+import java.util.concurrent.ConcurrentHashMap
 import ir.amirab.downloader.utils.OnDuplicateStrategy
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
 class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
+    private data class PartSpeedSample(val downloaded: Long, val timestamp: Long)
+    private val partSpeedSamples = ConcurrentHashMap<String, PartSpeedSample>()
     val appComponent by inject<AppComponent>()
     val downloadSystem by inject<DownloadSystem>()
     val queueManager by inject<QueueManager>()
@@ -210,6 +214,8 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
                     completeTime = item.completeTime,
                     queueId = membership?.first,
                     queueName = membership?.second,
+                    connections = item.parts.count { it.status is PartDownloadStatus.IsActive },
+                    maxConnections = appSettings.threadCount.value,
                 )
                 is CompletedDownloadItemState -> ApiDownloadModel(
                     id = item.id, name = item.name, folder = item.folder,
@@ -223,6 +229,46 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
                 )
             }
         }.sortedByDescending { it.dateAdded }
+    }
+
+    override fun listDownloadParts(id: Long): List<ApiDownloadPart> {
+        val item = downloadSystem.downloadMonitor.downloadListFlow.value.firstOrNull { it.id == id }
+            ?: return emptyList()
+        if (item !is ProcessingDownloadItemState) return emptyList()
+        val now = System.currentTimeMillis()
+        val activeKeys = HashSet<String>()
+        val parts = item.parts.sortedBy { it.id }.map { part ->
+            val key = "\$id:\$\{part.id}"
+            activeKeys += key
+            val downloaded = part.howMuchProceed
+            val previous = partSpeedSamples.put(key, PartSpeedSample(downloaded, now))
+            val speed = if (previous == null) {
+                0L
+            } else {
+                val elapsed = now - previous.timestamp
+                if (elapsed <= 0L || downloaded <= previous.downloaded) 0L
+                else ((downloaded - previous.downloaded) * 1000L / elapsed).coerceAtLeast(0L)
+            }
+            val status = when (part.status) {
+                PartDownloadStatus.IDLE -> "Idle"
+                PartDownloadStatus.Connecting -> "Connecting"
+                PartDownloadStatus.ReceivingData -> "Receiving data"
+                PartDownloadStatus.Completed -> "Finished"
+                is PartDownloadStatus.Canceled -> "Disconnected"
+            }
+            val error = (part.status as? PartDownloadStatus.Canceled)?.e?.message
+            ApiDownloadPart(
+                id = part.id,
+                downloaded = downloaded,
+                size = part.length,
+                percent = part.percent,
+                speed = speed,
+                status = status,
+                error = error,
+            )
+        }
+        partSpeedSamples.keys.removeIf { it.startsWith("\$id:") && it !in activeKeys }
+        return parts
     }
 
     override suspend fun updateDownload(id: Long, link: String, preferredConnectionCount: Int?) {
