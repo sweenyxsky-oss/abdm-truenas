@@ -23,11 +23,10 @@ LABEL org.opencontainers.image.source="https://github.com/sweenyxsky-oss/abdm-tr
 ENV HOME=/config \
     ABDM_API_HOST=0.0.0.0 \
     ABDM_API_PORT=15151 \
-    ABDM_BROWSER_PORT=15153 \
     TZ=Asia/Riyadh \
     ABDM_DOWNLOAD_FOLDER=/downloads
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    chromium xvfb x11vnc novnc websockify netcat-openbsd dbus-x11 fonts-liberation \
+    chromium xvfb x11vnc novnc dbus-x11 fonts-liberation \
     libx11-6 libxext6 libxrender1 libxtst6 libxi6 libgl1 libfontconfig1 libfreetype6 libasound2 \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /opt/abdm
@@ -38,6 +37,6 @@ COPY docker-entrypoint.sh /opt/abdm/docker-entrypoint.sh
 RUN printf "/config\n" > /opt/abdm/.portable && mkdir -p /config /downloads /temp && chmod +x /opt/abdm/docker-entrypoint.sh && useradd --system --uid 568 --home /config --shell /usr/sbin/nologin abdm && \
     chown -R abdm:abdm /opt/abdm /config /downloads /temp
 USER abdm
-EXPOSE 15151 15153
+EXPOSE 15151
 VOLUME ["/config", "/downloads", "/temp"]
 ENTRYPOINT ["/opt/abdm/docker-entrypoint.sh"]
