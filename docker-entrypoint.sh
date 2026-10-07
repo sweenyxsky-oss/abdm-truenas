@@ -26,8 +26,8 @@ kill -0 "$XVFB_PID" 2>/dev/null || {
     exit 1
 }
 
-# Keep the VNC server on localhost. Only websockify is exposed to the network.
-# This prevents direct unauthenticated RFB access on port 5900.
+# Keep the VNC server on localhost. The Ktor browser proxy is the only
+# network-facing path to the display, so raw RFB is never exposed.
 x11vnc -display :99 -forever -shared -rfbport 5900 -nopw -listen 127.0.0.1 >"$LOG_DIR/x11vnc.log" 2>&1 &
 X11VNC_PID=$!
 sleep 1
@@ -61,10 +61,10 @@ if ! kill -0 "$CHROMIUM_PID" 2>/dev/null; then
     echo "Chromium exited during startup" >>"$LOG_DIR/browser-startup.log"
     exit 1
 fi
-echo "Browser services started: Xvfb=$XVFB_PID x11vnc=$X11VNC_PID websockify=$WEBSOCKIFY_PID chromium=$CHROMIUM_PID" >"$LOG_DIR/browser-startup.log"
+echo "Browser services started: Xvfb=$XVFB_PID x11vnc=$X11VNC_PID chromium=$CHROMIUM_PID" >"$LOG_DIR/browser-startup.log"
 
 cleanup() {
-    kill "$CHROMIUM_PID" "$WEBSOCKIFY_PID" "$X11VNC_PID" "$XVFB_PID" 2>/dev/null || true
+    kill "$CHROMIUM_PID" "$X11VNC_PID" "$XVFB_PID" 2>/dev/null || true
 }
 trap cleanup INT TERM EXIT
 
