@@ -238,7 +238,7 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
         val now = System.currentTimeMillis()
         val activeKeys = HashSet<String>()
         val parts = item.parts.sortedBy { it.id }.map { part ->
-            val key = "\$id:\$\{part.id}"
+            val key = "$id:${part.id}"
             activeKeys += key
             val downloaded = part.howMuchProceed
             val previous = partSpeedSamples.put(key, PartSpeedSample(downloaded, now))
