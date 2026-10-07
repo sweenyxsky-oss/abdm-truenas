@@ -18,7 +18,6 @@ import io.ktor.websocket.Frame
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.joinAll
 import java.io.File
 import java.net.Socket
 import java.util.UUID
@@ -97,8 +96,15 @@ internal fun Application.setupRouting(
                 call.respondText(json.encodeToString(ApiBrowserResponse.serializer(), integrationHandler.browse(path)), ContentType.Application.Json)
             }
             get("/browser/session") {
-                val port = System.getenv("ABDM_BROWSER_PORT")?.toIntOrNull()?.takeIf { it in 1024..65535 } ?: 15153
-                call.respondText("""{"enabled":true,"port":$port}""", ContentType.Application.Json)
+                val ready = runCatching { Socket("127.0.0.1", 5900).use { true } }.getOrDefault(false)
+                if (!ready) {
+                    call.respondText("{\"enabled\":false,\"ready\":false}", ContentType.Application.Json, HttpStatusCode.ServiceUnavailable)
+                } else {
+                    call.respondText(
+                        "{\"enabled\":true,\"ready\":true,\"token\":\"$browserToken\"}",
+                        ContentType.Application.Json,
+                    )
+                }
             }
             get("/categories") {
                 call.respondText(json.encodeToString(ListSerializer(ApiCategoryModel.serializer()), integrationHandler.listCategories()), ContentType.Application.Json)
