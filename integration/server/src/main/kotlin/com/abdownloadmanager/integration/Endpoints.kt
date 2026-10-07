@@ -219,11 +219,11 @@ internal fun Application.setupRouting(
         staticFiles("/browser/novnc", File("/usr/share/novnc"))
         webSocket("/browser/websockify") {
             if (call.request.queryParameters["token"] != browserToken) {
-                close(io.ktor.websocket.CloseReason(io.ktor.websocket.CloseReason.Codes.VIOLATED_POLICY, "Invalid browser session"))
+                outgoing.send(Frame.Close(io.ktor.websocket.CloseReason(io.ktor.websocket.CloseReason.Codes.VIOLATED_POLICY, "Invalid browser session")))
                 return@webSocket
             }
             val socket = runCatching { Socket("127.0.0.1", 5900) }.getOrElse {
-                close(io.ktor.websocket.CloseReason(io.ktor.websocket.CloseReason.Codes.INTERNAL_ERROR, "Browser display unavailable"))
+                outgoing.send(Frame.Close(io.ktor.websocket.CloseReason(io.ktor.websocket.CloseReason.Codes.INTERNAL_ERROR, "Browser display unavailable")))
                 return@webSocket
             }
             socket.use { tcp ->
@@ -244,7 +244,7 @@ internal fun Application.setupRouting(
                     for (frame in incoming) {
                         when (frame) {
                             is Frame.Binary -> output.write(frame.data)
-                            is Frame.Text -> output.write(frame.readText().toByteArray(Charsets.ISO_8859_1))
+                            is Frame.Text -> output.write(frame.data)
                             else -> Unit
                         }
                         output.flush()
