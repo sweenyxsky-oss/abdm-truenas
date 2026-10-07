@@ -1,7 +1,7 @@
 const state={view:"dashboard",page:1,pageSize:10,downloads:[],allDownloads:[],queues:[],connected:false,query:"",browserPath:"",browserItems:[],categories:[],settings:null,lastReconnectAttempt:0,selectedIds:new Set(),importItems:[],detailsPollTimer:null,browserSession:null};
 state.downloads=[];
 
-const titles={dashboard:["Dashboard","Download manager overview"],downloads:["Downloads","All download tasks"],queue:["Queue","Manage download queues"],browser:["Browser","Repository and file browser"],categories:["Categories","Organize downloads"],scheduler:["Scheduler","Scheduled download rules"],settings:["Settings","ABDM service configuration"]};
+const titles={dashboard:["Dashboard","Download manager overview"],downloads:["Downloads","All download tasks"],queue:["Queue","Manage download queues"],browser:["Browser","Chromium browser session"],categories:["Categories","Organize downloads"],scheduler:["Scheduler","Scheduled download rules"],settings:["Settings","ABDM service configuration"]};
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function jsAttrArg(s){return esc(JSON.stringify(String(s)))}
 function paginate(items){const pages=Math.max(1,Math.ceil(items.length/state.pageSize));if(state.page>pages)state.page=pages;const start=(state.page-1)*state.pageSize;return {items:items.slice(start,start+state.pageSize),pages,start}}
