@@ -7,11 +7,13 @@ services:
       TZ: Asia/Riyadh
       ABDM_API_HOST: 0.0.0.0
       ABDM_API_PORT: 15151
+      ABDM_BROWSER_PORT: 15153
       ABDM_DOWNLOAD_FOLDER: /downloads
       # Optional: set a valid API key here to enable authentication on first boot.
       # ABDM_API_KEY: replace-with-a-secret-key
     ports:
       - "15151:15151"
+      - "15153:15153"
     volumes:
       - /mnt/dataPool/abdm/config:/config
       - /mnt/dataPool/abdm/downloads:/downloads
