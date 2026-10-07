@@ -246,6 +246,7 @@ internal fun Application.setupRouting(
                         output.flush()
                     }
                 } finally {
+                    runCatching { tcp.close() }
                     tcpToWeb.cancel()
                     tcpToWeb.join()
                 }
