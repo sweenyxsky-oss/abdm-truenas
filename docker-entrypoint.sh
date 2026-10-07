@@ -57,6 +57,7 @@ chromium \
 CHROMIUM_PID=$!
 
 sleep 3
+printf "%s\n" "$CHROMIUM_PID" > "$LOG_DIR/chromium.pid"
 if ! kill -0 "$CHROMIUM_PID" 2>/dev/null; then
     echo "Chromium exited during startup" >>"$LOG_DIR/browser-startup.log"
     exit 1
@@ -65,6 +66,7 @@ echo "Browser services started: Xvfb=$XVFB_PID x11vnc=$X11VNC_PID chromium=$CHRO
 
 cleanup() {
     kill "$CHROMIUM_PID" "$X11VNC_PID" "$XVFB_PID" 2>/dev/null || true
+rm -f "$LOG_DIR/chromium.pid"
 }
 trap cleanup INT TERM EXIT
 
