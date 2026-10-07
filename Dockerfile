@@ -5,15 +5,18 @@ COPY . .
 RUN chmod +x ./gradlew && set -o pipefail; ./gradlew :desktop:app:createReleaseDistributable --no-daemon --warning-mode=none 2>&1 | tee /tmp/gradle-build.log | sed -E '/(^|[[:space:]])w: /d; /Deprecated Gradle features were used in this build/d; /You can use.*warning-mode all/d'
 
 FROM node:22-bookworm-slim AS browser-extension
-RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates make jq zip && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates unzip wget && rm -rf /var/lib/apt/lists/*
 WORKDIR /src/browser-extension
 RUN git clone --depth 1 https://github.com/amir1376/ab-download-manager-browser-integration.git .
 RUN sed -i 's/silentAddDownload: z.boolean().catch(false)/silentAddDownload: z.boolean().catch(true)/' src/configs/Config.ts && \
     sed -i 's/silentStartDownload: z.boolean().catch(false)/silentStartDownload: z.boolean().catch(true)/' src/configs/Config.ts
 RUN npm ci --ignore-scripts && npm run build:chrome
 WORKDIR /src/ublock-origin-lite
-RUN git clone --depth 1 --branch 2026.926.2202 https://github.com/gorhill/uBlock.git .
-RUN make mv3-chromium
+RUN wget -q -O /tmp/uBOLite_2026.926.2202.chromium.zip https://github.com/uBlockOrigin/uBOL-home/releases/download/2026.926.2202/uBOLite_2026.926.2202.chromium.zip && \
+    echo "9a0d94e832fde9430f64817ff1ba3f34040f19caa113a24e6d84aad1d05eb1aa  /tmp/uBOLite_2026.926.2202.chromium.zip" | sha256sum -c - && \
+    unzip -q /tmp/uBOLite_2026.926.2202.chromium.zip -d /src/ublock-origin-lite && \
+    test -f /src/ublock-origin-lite/manifest.json && \
+    rm /tmp/uBOLite_2026.926.2202.chromium.zip
 
 FROM debian:bookworm-slim
 LABEL org.opencontainers.image.source="https://github.com/sweenyxsky-oss/abdm-truenas"
