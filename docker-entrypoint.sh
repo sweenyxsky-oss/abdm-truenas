@@ -36,19 +36,6 @@ kill -0 "$X11VNC_PID" 2>/dev/null || {
     exit 1
 }
 
-# noVNC/websockify is the only externally reachable browser-display service.
-websockify --web=/usr/share/novnc 0.0.0.0:15153 127.0.0.1:5900 >"$LOG_DIR/websockify.log" 2>&1 &
-WEBSOCKIFY_PID=$!
-i=0
-while ! nc -z 127.0.0.1 15153 >/dev/null 2>&1; do
-    i=$((i + 1))
-    [ "$i" -lt 20 ] || {
-        echo "websockify failed to listen on 15153" >>"$LOG_DIR/browser-startup.log"
-        exit 1
-    }
-    sleep 1
-done
-
 # Start a real Chromium session with a persistent profile. The explicit X11,
 # software-rendering and sandbox flags make Chromium reliable under Xvfb in
 # the TrueNAS container. We intentionally do not restore the last session:
