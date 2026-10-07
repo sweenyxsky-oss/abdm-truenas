@@ -1,4 +1,4 @@
-const state={view:"dashboard",page:1,pageSize:10,downloads:[],allDownloads:[],queues:[],connected:false,query:"",browserPath:"",browserItems:[],categories:[],settings:null,lastReconnectAttempt:0,selectedIds:new Set(),importItems:[],detailsPollTimer:null};
+const state={view:"dashboard",page:1,pageSize:10,downloads:[],allDownloads:[],queues:[],connected:false,query:"",browserPath:"",browserItems:[],categories:[],settings:null,lastReconnectAttempt:0,selectedIds:new Set(),importItems:[],detailsPollTimer:null,browserSession:null};
 state.downloads=[];
 
 const titles={dashboard:["Dashboard","Download manager overview"],downloads:["Downloads","All download tasks"],queue:["Queue","Manage download queues"],browser:["Browser","Repository and file browser"],categories:["Categories","Organize downloads"],scheduler:["Scheduler","Scheduled download rules"],settings:["Settings","ABDM service configuration"]};
@@ -83,10 +83,23 @@ function renderQueue(){
   }).join("")}</div>${pagination(state.queues.length,p.pages)}`;
 }
 function renderBrowser(){
-  const p=paginate(state.browserItems);
-  const crumbs=state.browserPath?state.browserPath.split("/").filter(Boolean):[];
-  return `<div class="toolbar"><button class="secondary" onclick="browseTo('')">⌂ Root</button><button class="secondary" ${!state.browserPath?'disabled':''} onclick="browseParent()">↑ Up</button><div class="browser-path grow">/ ${crumbs.map(esc).join(" / ")}</div></div>
-  <div class="card table-wrap"><table class="table"><thead><tr><th>NAME</th><th>TYPE</th><th>SIZE</th><th>MODIFIED</th></tr></thead><tbody>${p.items.map(x=>`<tr ${x.directory?'class="clickable" onclick="browseTo(${jsAttrArg(x.path)})"':''}><td class="name">${x.directory?'📁':'📄'} ${esc(x.name)}</td><td>${x.directory?'Folder':'File'}</td><td>${x.directory?'—':formatBytes(x.size)}</td><td>${x.modified?new Date(x.modified).toLocaleString():'—'}</td></tr>`).join("") || '<tr><td colspan="4" class="empty">This folder is empty.</td></tr>'}</tbody></table></div>${pagination(state.browserItems.length,p.pages)}`;
+  const session=state.browserSession;
+  if(!session?.enabled){
+    return '<div class="card empty"><strong>Browser is starting</strong><span>Chromium display information is not available yet. Try opening the Browser tab again in a moment.</span></div>';
+  }
+  const host=window.location.hostname;
+  const port=Number(session.port)||15153;
+  const url=window.location.protocol+"//"+host+":"+port+"/vnc.html?autoconnect=true&resize=remote&path=websockify";
+  return '<div class="browser-shell">'+
+    '<div class="browser-head"><div><strong>Chromium</strong><span>Real Chromium session · downloads are captured by ABDM</span></div><button class="secondary" onclick="reloadBrowser()">Reload browser</button></div>'+
+    '<div class="browser-frame-wrap"><iframe class="browser-frame" src="'+esc(url)+'" title="Chromium browser" allow="clipboard-read; clipboard-write"></iframe></div>'+
+    '</div>';
+}
+window.reloadBrowser=async function(){
+  try{
+    await ABDM_API.browserSession();
+    render();
+  }catch(e){alert("Browser is unavailable: "+e.message)}
 }
 function renderCategories(){
   const p=paginate(state.categories);
@@ -158,6 +171,14 @@ window.saveSettings=async function(){
     render();
   }catch(e){alert("Settings update failed: "+e.message)}
 };
+async function loadBrowserSession(quiet=true){
+  if(!state.connected)return;
+  try{
+    state.browserSession=await ABDM_API.browserSession();
+    if(!quiet&&state.view==="browser")render();
+  }catch(e){console.warn("Unable to load browser session",e);state.browserSession=null}
+}
+
 async function loadSettings(quiet=true){
   if(!state.connected)return;
   try{state.settings=await ABDM_API.settings();if(state.view==="settings"&&!quiet)render()}catch(e){console.warn("Unable to load settings",e)}
@@ -327,14 +348,14 @@ function formatEta(value){
   if(m)return m+"m "+s+"s";
   return s+"s";
 }
-document.getElementById("nav").addEventListener("click",e=>{const b=e.target.closest(".nav-item");if(b){state.view=b.dataset.page;state.page=1;render();if(state.view==="browser")browseTo(state.browserPath)}});
+document.getElementById("nav").addEventListener("click",e=>{const b=e.target.closest(".nav-item");if(b){state.view=b.dataset.page;state.page=1;render();if(state.view==="browser")loadBrowserSession(false)}});
 
 document.getElementById("addBtn").onclick=async()=>{await loadQueues(true);await loadCategories(true);refreshQueueSelect();refreshCategorySelect();if(state.settings?.downloadFolder)document.getElementById("pathInput").value=state.settings.downloadFolder;document.getElementById("addDialog").showModal()};
 document.getElementById("addForm").addEventListener("submit",async e=>{if(e.submitter?.value==="cancel")return;e.preventDefault();const urls=document.getElementById("urlInput").value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);if(!urls.length)return;try{await ABDM_API.add({urls,folder:document.getElementById("pathInput").value,queueId:(document.getElementById("queueInput").value===""?null:Number(document.getElementById("queueInput").value)),categoryId:(document.getElementById("categoryInput").value===""?null:Number(document.getElementById("categoryInput").value))});await loadDownloads(false);document.getElementById("addDialog").close();}catch(err){alert("Backend API error: "+err.message)}});
 document.getElementById("importBtn").onclick=()=>document.getElementById("importDialog").showModal();
 document.getElementById("importFile").addEventListener("change",async e=>{const file=e.target.files?.[0];if(!file)return;try{state.importItems=await ABDM_API.inspectLinks(await file.text());document.getElementById("importPreview").innerHTML=state.importItems.length?state.importItems.map((x,i)=>`<label class="import-row"><input type="checkbox" class="import-check" data-index="${i}" checked><span><strong>${esc(x.name||"Unknown")}</strong><small>${esc(x.sizeText||"Size unknown")} · ${esc(x.status||"")}${x.error?" · "+esc(x.error):""}</small></span></label>`).join(""):"<div class='empty'>No valid links found.</div>"}catch(err){document.getElementById("importPreview").innerHTML=`<div class="empty">Import failed: ${esc(err.message)}</div>`}});
 document.getElementById("importForm").addEventListener("submit",async e=>{if(e.submitter?.value==="cancel")return;e.preventDefault();const selected=Array.from(document.querySelectorAll(".import-check:checked")).map(x=>state.importItems[Number(x.dataset.index)]).filter(Boolean);if(!selected.length)return;try{await ABDM_API.add({urls:selected.map(x=>x.url),names:selected.map(x=>x.name),folder:state.settings?.downloadFolder||"/downloads"});state.importItems=[];document.getElementById("importDialog").close();await loadDownloads(false)}catch(err){alert("Import failed: "+err.message)}});
-async function connect(){try{await ABDM_API.ping();state.connected=true;await loadDownloads(true);await loadQueues(true);await loadCategories(true);await loadSettings(true);document.querySelector(".status-dot").classList.add("ok");document.getElementById("connection").textContent="Backend connected"}catch(e){document.getElementById("connection").textContent="Backend unavailable"}render()}
+async function connect(){try{await ABDM_API.ping();state.connected=true;await loadDownloads(true);await loadQueues(true);await loadCategories(true);await loadSettings(true);await loadBrowserSession(true);document.querySelector(".status-dot").classList.add("ok");document.getElementById("connection").textContent="Backend connected"}catch(e){document.getElementById("connection").textContent="Backend unavailable"}render()}
 render();connect();
 setInterval(()=>{
   if(!state.connected){
