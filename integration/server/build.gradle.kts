@@ -9,5 +9,6 @@ dependencies {
     implementation(libs.ktor.server.cio)
     implementation(libs.ktor.server.auth.core)
     implementation(libs.ktor.server.auth.apiKey)
+    implementation(libs.ktor.server.websockets)
     implementation(project(":shared:utils"))
 }
