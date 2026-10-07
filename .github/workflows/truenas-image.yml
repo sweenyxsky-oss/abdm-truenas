@@ -39,7 +39,9 @@ jobs:
           images: ghcr.io/${{ github.repository }}
           tags: |
             type=ref,event=branch
+            type=sha,prefix=sha-
             type=ref,event=tag
+            type=raw,value=v0.4-browser-multiconnection-20261007,enable=${{ github.ref == 'refs/heads/v0.4-browser-multiconnection' }}
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/truenas-web' }}
           flavor: latest=false
 
