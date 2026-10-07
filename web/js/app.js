@@ -1,4 +1,4 @@
-const state={view:"dashboard",page:1,pageSize:10,downloads:[],allDownloads:[],queues:[],connected:false,query:"",browserPath:"",browserItems:[],categories:[],settings:null,lastReconnectAttempt:0,selectedIds:new Set(),importItems:[]};
+const state={view:"dashboard",page:1,pageSize:10,downloads:[],allDownloads:[],queues:[],connected:false,query:"",browserPath:"",browserItems:[],categories:[],settings:null,lastReconnectAttempt:0,selectedIds:new Set(),importItems:[],detailsPollTimer:null};
 state.downloads=[];
 
 const titles={dashboard:["Dashboard","Download manager overview"],downloads:["Downloads","All download tasks"],queue:["Queue","Manage download queues"],browser:["Browser","Repository and file browser"],categories:["Categories","Organize downloads"],scheduler:["Scheduler","Scheduled download rules"],settings:["Settings","ABDM service configuration"]};
@@ -216,7 +216,56 @@ async function loadCategories(quiet=true){if(!state.connected)return;try{const i
 window.browseTo=async function(path){try{const data=await ABDM_API.browser(path);state.browserPath=data.path||"";state.browserItems=Array.isArray(data.items)?data.items:[];state.page=1;render()}catch(e){alert("Browser error: "+e.message)}};
 window.browseParent=async function(){const p=state.browserPath.split("/").filter(Boolean);p.pop();await browseTo(p.join("/"))};
 function render(){const pageScroll=window.scrollY;const scrollState={};document.querySelectorAll("[data-scroll-key]").forEach(el=>scrollState[el.dataset.scrollKey]={top:el.scrollTop,left:el.scrollLeft});document.getElementById("page-title").textContent=titles[state.view][0];document.getElementById("page-subtitle").textContent=titles[state.view][1];document.querySelectorAll(".nav-item").forEach(x=>x.classList.toggle("active",x.dataset.page===state.view));let html=state.view==="dashboard"?renderDashboard():state.view==="downloads"?renderDownloads():state.view==="queue"?renderQueue():state.view==="browser"?renderBrowser():state.view==="categories"?renderCategories():state.view==="scheduler"?renderScheduler():state.view==="settings"?renderSettings():renderSimple("Page","Coming soon.");document.getElementById("app").innerHTML=html;Object.entries(scrollState).forEach(([key,pos])=>{const el=document.querySelector(`[data-scroll-key="${key}"]`);if(el){el.scrollTop=pos.top;el.scrollLeft=pos.left}});requestAnimationFrame(()=>window.scrollTo(0,pageScroll))}
-window.setPage=n=>{state.page=Number(n);render()};window.setSize=n=>{state.pageSize=Number(n);state.page=1;render()};window.showDownload=function(id){const d=state.allDownloads.find(x=>Number(x.id)===Number(id));if(!d)return;const r=d.raw||d;document.getElementById("detailsTitle").textContent=d.name;document.getElementById("detailsSubtitle").textContent=d.status+" · "+(d.queueName||"No queue");document.getElementById("detailsBody").innerHTML=`<div class="details-grid"><div><span>Progress</span><strong>${d.progress}%</strong></div><div><span>Speed</span><strong>${esc(d.speed)}</strong></div><div><span>ETA</span><strong>${esc(d.eta)}</strong></div><div><span>Size</span><strong>${esc(d.size)}</strong></div><div><span>Connections</span><strong>${r.connections??0} active / ${r.maxConnections??"global"}</strong></div><div><span>Category</span><strong>${esc(r.categoryName||"Uncategorized")}</strong></div><div><span>Folder</span><strong>${esc(r.folder||"—")}</strong></div><div><span>Queue</span><strong>${esc(d.queueName||"No queue")}</strong></div><div><span>Added</span><strong>${r.dateAdded?new Date(r.dateAdded).toLocaleString():"—"}</strong></div><div><span>Completed</span><strong>${r.completeTime?new Date(r.completeTime).toLocaleString():"—"}</strong></div><div class="detail-wide"><span>Direct link</span><input id="detail-link" value="${esc(r.downloadLink||"")}" autocomplete="off"></div><div class="detail-wide"><span>Connections for this download</span><input id="detail-connections" type="number" min="1" max="128" value="${r.maxConnections||8}"></div><div class="detail-wide"><span>Last error</span><strong class="error-detail">${esc(r.errorDescription||r.errorMessage||"No recorded error")}</strong></div></div>`;document.getElementById("saveDetailsBtn").onclick=()=>saveDownloadDetails(id);document.getElementById("detailsDialog").showModal()};
+window.setPage=n=>{state.page=Number(n);render()};window.setSize=n=>{state.pageSize=Number(n);state.page=1;render()};function renderDownloadParts(parts){
+  if(!Array.isArray(parts)||!parts.length){
+    return '<div class="parts-empty">No connection parts are currently available.</div>';
+  }
+  return '<div class="parts-table-wrap"><table class="parts-table"><thead><tr><th>CONNECTION</th><th>PROGRESS</th><th>DOWNLOADED</th><th>SIZE</th><th>SPEED</th><th>STATUS</th><th>ERROR</th></tr></thead><tbody>'+
+    parts.map((p,i)=>'<tr><td>Part '+(i+1)+'</td><td><div class="part-progress"><i style="width:'+(p.percent==null?0:p.percent)+'%"></i></div><span>'+esc(p.percent==null?"—":p.percent+"%")+'</span></td><td>'+formatBytes(p.downloaded)+'</td><td>'+formatBytes(p.size)+'</td><td>'+formatSpeed(p.speed)+'</td><td><span class="tag">'+esc(p.status||"Unknown")+'</span></td><td class="part-error">'+esc(p.error||"—")+'</td></tr>').join("")+
+    '</tbody></table></div>';
+}
+async function loadDownloadParts(id){
+  try{
+    const parts=await ABDM_API.downloadParts(id);
+    const target=document.getElementById("download-parts");
+    if(target)target.innerHTML=renderDownloadParts(parts);
+  }catch(e){
+    const target=document.getElementById("download-parts");
+    if(target)target.innerHTML='<div class="parts-empty">Unable to load connection details: '+esc(e.message)+'</div>';
+  }
+}
+window.showDownload=function(id){
+  const d=state.allDownloads.find(x=>Number(x.id)===Number(id));
+  if(!d)return;
+  const r=d.raw||d;
+  if(state.detailsPollTimer){clearInterval(state.detailsPollTimer);state.detailsPollTimer=null}
+  document.getElementById("detailsTitle").textContent=d.name;
+  document.getElementById("detailsSubtitle").textContent=d.status+" · "+(d.queueName||"No queue");
+  document.getElementById("detailsBody").innerHTML=
+    '<div class="details-grid">'+
+      '<div><span>Progress</span><strong>'+d.progress+'%</strong></div>'+
+      '<div><span>Speed</span><strong>'+esc(d.speed)+'</strong></div>'+
+      '<div><span>ETA</span><strong>'+esc(d.eta)+'</strong></div>'+
+      '<div><span>Size</span><strong>'+esc(d.size)+'</strong></div>'+
+      '<div><span>Connections</span><strong>'+((r.connections??0))+' active / '+(r.maxConnections??"global")+'</strong></div>'+
+      '<div><span>Category</span><strong>'+esc(r.categoryName||"Uncategorized")+'</strong></div>'+
+      '<div><span>Folder</span><strong>'+esc(r.folder||"—")+'</strong></div>'+
+      '<div><span>Queue</span><strong>'+esc(d.queueName||"No queue")+'</strong></div>'+
+      '<div><span>Added</span><strong>'+(r.dateAdded?new Date(r.dateAdded).toLocaleString():"—")+'</strong></div>'+
+      '<div><span>Completed</span><strong>'+(r.completeTime?new Date(r.completeTime).toLocaleString():"—")+'</strong></div>'+
+      '<div class="detail-wide"><span>Direct link</span><input id="detail-link" value="'+esc(r.downloadLink||"")+'" autocomplete="off"></div>'+
+      '<div class="detail-wide"><span>Connections for this download</span><input id="detail-connections" type="number" min="1" max="128" value="'+(r.maxConnections||8)+'"></div>'+
+      '<div class="detail-wide"><span>Last error</span><strong class="error-detail">'+esc(r.errorDescription||r.errorMessage||"No recorded error")+'</strong></div>'+
+    '</div>'+
+    '<div class="parts-section"><div class="parts-head"><div><strong>Parts Info</strong><span>Live status and speed for each active connection</span></div></div><div id="download-parts"><div class="parts-empty">Loading connection details…</div></div></div>';
+  document.getElementById("saveDetailsBtn").onclick=()=>saveDownloadDetails(id);
+  document.getElementById("detailsDialog").showModal();
+  loadDownloadParts(id);
+  state.detailsPollTimer=setInterval(()=>loadDownloadParts(id),1000);
+};
+document.getElementById("detailsDialog").addEventListener("close",()=>{
+  if(state.detailsPollTimer){clearInterval(state.detailsPollTimer);state.detailsPollTimer=null}
+});
 window.saveDownloadDetails=async function(id){const link=document.getElementById("detail-link")?.value.trim();const connections=Number(document.getElementById("detail-connections")?.value);if(!link){alert("Download link cannot be empty.");return}if(!Number.isInteger(connections)||connections<1||connections>128){alert("Connections must be between 1 and 128.");return}try{await ABDM_API.updateDownload(id,{link,preferredConnectionCount:connections});document.getElementById("detailsDialog").close();await loadDownloads(false)}catch(e){alert("Download update failed: "+e.message)}};
 window.downloadAction=async function(id,action,removeFile=false){
   if(action==="remove"&&!confirm(removeFile?"Remove the download and delete its file?":"Remove this download from ABDM?"))return;
