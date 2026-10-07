@@ -1,7 +1,8 @@
 #!/bin/sh
 set -eu
 
-mkdir -p /config/system /config/chromium /config/chromium/Default /downloads/browser /temp/downloadData
+LOG_DIR=/config/system/browser
+mkdir -p "$LOG_DIR" /config/chromium /config/chromium/Default /downloads/browser /temp/downloadData
 
 # Keep the real Chromium browser chrome visible. These are only defaults for a
 # new profile; an existing user's Chromium preferences are never overwritten.
@@ -10,42 +11,70 @@ if [ ! -f /config/chromium/Default/Preferences ]; then
 fi
 
 # Keep ABDM's transient download working data on the dedicated TrueNAS temp dataset.
-# Never replace an existing real directory: that preserves existing installations.
 if [ ! -e /config/system/downloadData ] && [ ! -L /config/system/downloadData ]; then
     ln -s /temp/downloadData /config/system/downloadData
 fi
 
-# Start a real graphical Chromium session in a virtual X display.
-# The display is exported through x11vnc + noVNC so it can be used from
-# desktop and mobile browsers. The official ABDM browser integration is
-# loaded into this Chromium instance and talks to the local ABDM API.
 export DISPLAY=:99
-Xvfb :99 -screen 0 1440x900x24 -ac +extension RANDR >/tmp/xvfb.log 2>&1 &
+
+# Start the virtual X server first and fail early if it cannot stay alive.
+Xvfb :99 -screen 0 1440x900x24 -ac +extension RANDR >"$LOG_DIR/xvfb.log" 2>&1 &
 XVFB_PID=$!
-
 sleep 1
+kill -0 "$XVFB_PID" 2>/dev/null || {
+    echo "Xvfb failed to start" >>"$LOG_DIR/browser-startup.log"
+    exit 1
+}
 
-x11vnc -display :99 -forever -shared -rfbport 5900 -nopw -listen 0.0.0.0 >/tmp/x11vnc.log 2>&1 &
+# Keep the VNC server on localhost. Only websockify is exposed to the network.
+# This prevents direct unauthenticated RFB access on port 5900.
+x11vnc -display :99 -forever -shared -rfbport 5900 -nopw -listen 127.0.0.1 >"$LOG_DIR/x11vnc.log" 2>&1 &
 X11VNC_PID=$!
+sleep 1
+kill -0 "$X11VNC_PID" 2>/dev/null || {
+    echo "x11vnc failed to start" >>"$LOG_DIR/browser-startup.log"
+    exit 1
+}
 
-websockify --web=/usr/share/novnc 0.0.0.0:15153 127.0.0.1:5900 >/tmp/websockify.log 2>&1 &
+# noVNC/websockify is the only externally reachable browser-display service.
+websockify --web=/usr/share/novnc 0.0.0.0:15153 127.0.0.1:5900 >"$LOG_DIR/websockify.log" 2>&1 &
 WEBSOCKIFY_PID=$!
+i=0
+while ! nc -z 127.0.0.1 15153 >/dev/null 2>&1; do
+    i=$((i + 1))
+    [ "$i" -lt 20 ] || {
+        echo "websockify failed to listen on 15153" >>"$LOG_DIR/browser-startup.log"
+        exit 1
+    }
+    sleep 1
+done
 
-# Start Chromium with a persistent profile so logins, cookies and site state
-# survive container restarts. The extension captures supported downloads and
-# forwards their URL/request headers to the ABDM engine.
+# Start a real Chromium session with a persistent profile. The explicit X11,
+# software-rendering and sandbox flags make Chromium reliable under Xvfb in
+# the TrueNAS container. We intentionally do not restore the last session:
+# a stale/crashed Chromium window must not leave the noVNC desktop blank.
 chromium \
     --user-data-dir=/config/chromium \
     --load-extension=/opt/abdm/browser-extension,/opt/abdm/ublock-origin-lite \
     --window-size=1440,900 \
+    --force-device-scale-factor=1 \
+    --ozone-platform=x11 \
+    --disable-gpu \
+    --no-sandbox \
     --no-first-run \
     --no-default-browser-check \
     --disable-dev-shm-usage \
     --disable-features=Translate \
-    --restore-last-session \
     --download-default-directory=/downloads/browser \
-    "https://www.google.com" >/tmp/chromium.log 2>&1 &
+    "https://www.google.com" >"$LOG_DIR/chromium.log" 2>&1 &
 CHROMIUM_PID=$!
+
+sleep 3
+if ! kill -0 "$CHROMIUM_PID" 2>/dev/null; then
+    echo "Chromium exited during startup" >>"$LOG_DIR/browser-startup.log"
+    exit 1
+fi
+echo "Browser services started: Xvfb=$XVFB_PID x11vnc=$X11VNC_PID websockify=$WEBSOCKIFY_PID chromium=$CHROMIUM_PID" >"$LOG_DIR/browser-startup.log"
 
 cleanup() {
     kill "$CHROMIUM_PID" "$WEBSOCKIFY_PID" "$X11VNC_PID" "$XVFB_PID" 2>/dev/null || true
