@@ -27,6 +27,8 @@ import ir.amirab.downloader.monitor.ProcessingDownloadItemState
 import ir.amirab.downloader.queue.QueueManager
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalTime
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
 import ir.amirab.downloader.utils.OnDuplicateStrategy
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -226,9 +228,15 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
     override suspend fun updateDownload(id: Long, link: String, preferredConnectionCount: Int?) {
         require(link.isNotBlank())
         require(preferredConnectionCount == null || preferredConnectionCount in 1..128)
-        downloadSystem.downloadMonitor.downloadListFlow.value.firstOrNull { it.id == id }
-            ?: error("Download not found")
-        error("Direct-link editing is not yet supported by the desktop download engine")
+        val info = inspectDownloadLinks(link).firstOrNull()
+        val resolvedName = info?.name?.takeIf { it.isNotBlank() && it != "download" } ?: suggestedFileName(link)
+        downloadSystem.editDownload(id, { item ->
+            item.link = link
+            item.preferredConnectionCount = preferredConnectionCount
+            if (item.name.isBlank() || item.name == "download" || item.name.startsWith("http://") || item.name.startsWith("https://")) {
+                item.name = resolvedName
+            }
+        }, null)
     }
 
     override suspend fun inspectDownloadLinks(text: String): List<ApiLinkInfo> {
@@ -238,14 +246,23 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
             .filter { it.startsWith("http://") || it.startsWith("https://") }
             .distinct()
             .map { url ->
-                val name = url.substringAfterLast('/').substringBefore('?').substringBefore('#').ifBlank { "download" }
                 try {
-                    client.newCall(okhttp3.Request.Builder().url(url).head().build()).execute().use { response ->
-                        val length = response.header("Content-Length")?.toLongOrNull()
-                        ApiLinkInfo(url, name, length, length?.let { formatSize(it) }, "Ready", null)
+                    var response = client.newCall(okhttp3.Request.Builder().url(url).head().build()).execute()
+                    if (!response.isSuccessful && response.code == 405) {
+                        response.close()
+                        response = client.newCall(
+                            okhttp3.Request.Builder().url(url).header("Range", "bytes=0-0").build()
+                        ).execute()
+                    }
+                    response.use {
+                        val length = it.header("Content-Range")?.substringAfterLast("/")?.toLongOrNull()
+                            ?: it.header("Content-Length")?.toLongOrNull()
+                        val name = contentDispositionFileName(it.header("Content-Disposition"))
+                            ?: suggestedFileName(it.request.url.toString())
+                        ApiLinkInfo(url, name, length, length?.let { size -> formatSize(size) }, if (it.isSuccessful) "Ready" else "HTTP " + it.code, null)
                     }
                 } catch (e: Exception) {
-                    ApiLinkInfo(url, name, null, null, "Error", e.message)
+                    ApiLinkInfo(url, suggestedFileName(url), null, null, "Error", e.message)
                 }
             }
             .toList()
@@ -322,7 +339,7 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
                 folder = task.folder?.takeIf { it.isNotBlank() } ?: appSettings.saveLocation.value,
                 name = task.name?.takeIf { it.isNotBlank() }
                     ?: addDownloaderInUiProps.extraConfig.suggestedName?.takeIf { it.isNotBlank() }
-                    ?: task.downloadSource.link.substringAfterLast("/").ifBlank { "download" },
+                    ?: suggestedFileName(task.downloadSource.link),
             ),
         )
         val newDownload = NewDownloadItemProps(
@@ -358,6 +375,22 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
             }
         }
         return id
+    }
+
+    private fun suggestedFileName(link: String): String {
+        val raw = link.substringBefore("?").substringBefore("#").substringAfterLast("/").ifBlank { "download" }
+        return runCatching { URLDecoder.decode(raw, StandardCharsets.UTF_8) }.getOrDefault(raw).ifBlank { "download" }
+    }
+
+    private fun contentDispositionFileName(header: String?): String? {
+        if (header.isNullOrBlank()) return null
+        val encoded = Regex("(?i)(?:^|;)\\s*filename\\*\\s*=\\s*(?:UTF-8''|\\\"?)([^;\\\"]+)").find(header)?.groupValues?.get(1)
+        if (!encoded.isNullOrBlank()) {
+            return runCatching { URLDecoder.decode(encoded, StandardCharsets.UTF_8) }.getOrNull()?.trim()?.takeIf { it.isNotBlank() }
+        }
+        val plain = Regex("(?i)(?:^|;)\\s*filename\\s*=\\s*\\\"([^\\\"]+)\\\"").find(header)?.groupValues?.get(1)
+            ?: Regex("(?i)(?:^|;)\\s*filename\\s*=\\s*([^;]+)").find(header)?.groupValues?.get(1)
+        return plain?.trim()?.takeIf { it.isNotBlank() }
     }
 
     private fun formatSize(bytes: Long): String {
