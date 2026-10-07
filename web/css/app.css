@@ -83,3 +83,11 @@ dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);bo
 .part-progress i{display:block;height:100%;background:var(--accent)}
 .part-error{max-width:220px;overflow-wrap:anywhere;color:var(--danger)}
 .parts-empty{padding:18px;color:var(--muted);font-size:12px}
+
+.browser-shell{display:flex;flex-direction:column;height:calc(100vh - 135px);min-height:520px;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#05080c}
+.browser-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 13px;border-bottom:1px solid var(--line);background:var(--panel)}
+.browser-head strong{display:block;font-size:13px}
+.browser-head span{display:block;color:var(--muted);font-size:11px;margin-top:3px}
+.browser-frame-wrap{position:relative;flex:1;min-height:0;background:#000}
+.browser-frame{display:block;width:100%;height:100%;border:0;background:#000}
+@media(max-width:850px){.browser-shell{height:calc(100vh - 105px);min-height:480px}.browser-head{padding:9px}.browser-head span{display:none}}
