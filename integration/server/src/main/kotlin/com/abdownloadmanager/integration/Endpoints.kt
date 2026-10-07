@@ -2,6 +2,7 @@ package com.abdownloadmanager.integration
 
 import com.abdownloadmanager.integration.model.AddDownloadsFromIntegration
 import com.abdownloadmanager.integration.model.ApiDownloadModel
+import com.abdownloadmanager.integration.model.ApiDownloadPart
 import com.abdownloadmanager.integration.model.ApiBrowserResponse
 import com.abdownloadmanager.integration.model.ApiCategoryModel
 import com.abdownloadmanager.integration.model.ApiQueueModel
@@ -143,6 +144,10 @@ internal fun Application.setupRouting(
                 }
             }
             route("/downloads/{id}") {
+                get("/parts") {
+                    val parts = integrationHandler.listDownloadParts(call.parameters["id"]!!.toLong())
+                    call.respondText(json.encodeToString(ListSerializer(ApiDownloadPart.serializer()), parts), ContentType.Application.Json)
+                }
                 post {
                     val body=json.decodeFromString<Map<String, kotlinx.serialization.json.JsonElement>>(call.receiveText())
                     val link=body["link"]?.toString()?.trim('"') ?: error("Missing link")
