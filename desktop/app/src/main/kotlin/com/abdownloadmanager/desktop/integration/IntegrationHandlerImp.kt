@@ -223,6 +223,34 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
         }.sortedByDescending { it.dateAdded }
     }
 
+    override suspend fun updateDownload(id: Long, link: String, preferredConnectionCount: Int?) {
+        require(link.isNotBlank())
+        require(preferredConnectionCount == null || preferredConnectionCount in 1..128)
+        downloadSystem.downloadMonitor.downloadListFlow.value.firstOrNull { it.id == id }
+            ?: error("Download not found")
+        error("Direct-link editing is not yet supported by the desktop download engine")
+    }
+
+    override suspend fun inspectDownloadLinks(text: String): List<ApiLinkInfo> {
+        val client = okhttp3.OkHttpClient()
+        return text.lineSequence()
+            .map { it.trim() }
+            .filter { it.startsWith("http://") || it.startsWith("https://") }
+            .distinct()
+            .map { url ->
+                val name = url.substringAfterLast('/').substringBefore('?').substringBefore('#').ifBlank { "download" }
+                try {
+                    client.newCall(okhttp3.Request.Builder().url(url).head().build()).execute().use { response ->
+                        val length = response.header("Content-Length")?.toLongOrNull()
+                        ApiLinkInfo(url, name, length, length?.let { formatSize(it) }, "Ready", null)
+                    }
+                } catch (e: Exception) {
+                    ApiLinkInfo(url, name, null, null, "Error", e.message)
+                }
+            }
+            .toList()
+    }
+
     override suspend fun pauseDownload(id: Long) {
         downloadSystem.manualPause(id)
     }
@@ -330,6 +358,17 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
             }
         }
         return id
+    }
+
+    private fun formatSize(bytes: Long): String {
+        val units = arrayOf("B", "KB", "MB", "GB", "TB")
+        var value = bytes.toDouble()
+        var index = 0
+        while (value >= 1024 && index < units.lastIndex) {
+            value /= 1024
+            index++
+        }
+        return if (index == 0) "${value.toLong()} ${units[index]}" else "${String.format("%.1f", value)} ${units[index]}"
     }
 
     companion object {
