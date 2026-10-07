@@ -267,7 +267,7 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
                 error = error,
             )
         }
-        partSpeedSamples.keys.removeIf { it.startsWith("\$id:") && it !in activeKeys }
+        partSpeedSamples.keys.removeIf { it.startsWith(id.toString() + ":") && it !in activeKeys }
         return parts
     }
 
