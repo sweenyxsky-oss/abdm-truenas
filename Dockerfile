@@ -33,7 +33,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /opt/abdm
 COPY --from=build /src/desktop/app/build/compose/binaries/main-release/app/ABDownloadManager /opt/abdm
 COPY --from=browser-extension /src/browser-extension/dist/chrome /opt/abdm/browser-extension
-COPY --from=browser-extension /src/ublock-origin-lite/uBOLite.chromium /opt/abdm/ublock-origin-lite
+COPY --from=browser-extension /src/ublock-origin-lite /opt/abdm/ublock-origin-lite
 COPY docker-entrypoint.sh /opt/abdm/docker-entrypoint.sh
 RUN printf "/config\n" > /opt/abdm/.portable && mkdir -p /config /downloads /temp && chmod +x /opt/abdm/docker-entrypoint.sh && useradd --system --uid 568 --home /config --shell /usr/sbin/nologin abdm && \
     chown -R abdm:abdm /opt/abdm /config /downloads /temp
