@@ -1,7 +1,7 @@
 name: abdm
 services:
   abdm:
-    image: ghcr.io/sweenyxsky-oss/abdm-truenas:v0.4-browser-multiconnection-20261007-20261007
+    image: ghcr.io/sweenyxsky-oss/abdm-truenas:v0.4-browser-multiconnection-20261007
     restart: unless-stopped
     environment:
       TZ: Asia/Riyadh
@@ -11,7 +11,7 @@ services:
       # Optional: set a valid API key here to enable authentication on first boot.
       # ABDM_API_KEY: replace-with-a-secret-key
     ports:
-      - "15151:15151"
+      - "15152:15151"
     volumes:
       - /mnt/dataPool/abdm/config:/config
       - /mnt/dataPool/abdm/downloads:/downloads
