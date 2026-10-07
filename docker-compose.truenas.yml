@@ -1,7 +1,7 @@
 name: abdm
 services:
   abdm:
-    image: ghcr.io/sweenyxsky-oss/abdm-truenas:latest
+    image: ghcr.io/sweenyxsky-oss/abdm-truenas:v0.4-browser-multiconnection-20261007-20261007
     restart: unless-stopped
     environment:
       TZ: Asia/Riyadh
