@@ -137,6 +137,7 @@ ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "kto
 ktor-server-cio = { module = "io.ktor:ktor-server-cio", version.ref = "ktor" }
 ktor-server-auth-core = { module = "io.ktor:ktor-server-auth", version.ref = "ktor" }
 ktor-server-auth-apiKey = { module = "io.ktor:ktor-server-auth-api-key", version.ref = "ktor" }
+ktor-server-websockets = { module = "io.ktor:ktor-server-websockets", version.ref = "ktor" }
 
 clikit = { module = "com.github.ajalt.clikt:clikt", version.ref = "clikit" }
 
