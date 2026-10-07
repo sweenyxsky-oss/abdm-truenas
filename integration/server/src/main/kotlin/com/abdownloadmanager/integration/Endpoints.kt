@@ -11,6 +11,17 @@ import com.abdownloadmanager.integration.model.NewDownloadTask
 import com.abdownloadmanager.integration.model.ApiLinkInfo
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
+import io.ktor.server.websocket.WebSockets
+import io.ktor.server.websocket.webSocket
+import io.ktor.server.http.content.staticFiles
+import io.ktor.websocket.Frame
+import io.ktor.http.HttpStatusCode
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.joinAll
+import java.io.File
+import java.net.Socket
+import java.util.UUID
 import io.ktor.server.auth.Authentication
 import io.ktor.server.auth.apikey.apiKey
 import io.ktor.server.auth.authenticate
@@ -35,6 +46,8 @@ internal fun Application.setupRouting(
     settings: IntegrationSettings,
 ) {
     val apiKey = settings.apiKey
+    val browserToken = UUID.randomUUID().toString()
+    install(WebSockets) { maxFrameSize = Long.MAX_VALUE }
     install(Authentication) {
         apiKey {
             headerName = "X-API-Key"
@@ -191,6 +204,45 @@ internal fun Application.setupRouting(
             }
             post("/ping") {
                 call.respondText("pong")
+            }
+        }
+        staticFiles("/browser/novnc", File("/usr/share/novnc"))
+        webSocket("/browser/websockify") {
+            if (call.request.queryParameters["token"] != browserToken) {
+                close(io.ktor.websocket.CloseReason(io.ktor.websocket.CloseReason.Codes.VIOLATED_POLICY, "Invalid browser session"))
+                return@webSocket
+            }
+            val socket = runCatching { Socket("127.0.0.1", 5900) }.getOrElse {
+                close(io.ktor.websocket.CloseReason(io.ktor.websocket.CloseReason.Codes.INTERNAL_ERROR, "Browser display unavailable"))
+                return@webSocket
+            }
+            socket.use { tcp ->
+                val input = tcp.getInputStream()
+                val output = tcp.getOutputStream()
+                val tcpToWeb = launch(Dispatchers.IO) {
+                    val buffer = ByteArray(16384)
+                    try {
+                        while (true) {
+                            val count = input.read(buffer)
+                            if (count < 0) break
+                            send(Frame.Binary(true, buffer.copyOf(count)))
+                        }
+                    } catch (_: Throwable) {
+                    }
+                }
+                try {
+                    for (frame in incoming) {
+                        when (frame) {
+                            is Frame.Binary -> output.write(frame.data)
+                            is Frame.Text -> output.write(frame.readText().toByteArray(Charsets.ISO_8859_1))
+                            else -> Unit
+                        }
+                        output.flush()
+                    }
+                } finally {
+                    tcpToWeb.cancel()
+                    tcpToWeb.join()
+                }
             }
         }
         staticResources("/", "web")
