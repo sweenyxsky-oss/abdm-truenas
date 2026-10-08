@@ -5,7 +5,7 @@ LOG_DIR=/config/system/browser
 PID_FILE="$LOG_DIR/chromium.pid"
 PROFILE=/config/firefox
 ABDM_EXT_ID=firefox-integration@abdownloadmanager.com
-UBLOCK_EXT_ID=uBOLiteRedux@raymondhill.net
+UBLOCK_EXT_ID=uBlock0@raymondhill.net
 mkdir -p "$LOG_DIR" "$PROFILE/extensions" /downloads/browser /temp/downloadData /config/system
 
 # Firefox profile preferences. user.js is applied on every start, so the
@@ -36,12 +36,14 @@ user_pref("alerts.showFavicons", true);
 EOF
 
 # Install the ABDM download-capture extension (unpacked; signature check is
-# disabled above, which Firefox ESR honours) and the signed uBlock Origin Lite.
+# disabled above, which Firefox ESR honours) and the signed full uBlock Origin.
 # Refreshed on every start so image updates replace older extension code.
+# Remove the old uBlock Origin Lite from profiles created by earlier images.
+rm -f "$PROFILE/extensions/uBOLiteRedux@raymondhill.net.xpi"
 rm -rf "$PROFILE/extensions/$ABDM_EXT_ID"
 mkdir -p "$PROFILE/extensions/$ABDM_EXT_ID"
 cp -r /opt/abdm/browser-extension/. "$PROFILE/extensions/$ABDM_EXT_ID/"
-cp -f /opt/abdm/ublock-origin-lite.xpi "$PROFILE/extensions/$UBLOCK_EXT_ID.xpi"
+cp -f /opt/abdm/ublock-origin.xpi "$PROFILE/extensions/$UBLOCK_EXT_ID.xpi"
 
 # Keep ABDM's transient download working data on the dedicated TrueNAS temp dataset.
 if [ ! -e /config/system/downloadData ] && [ ! -L /config/system/downloadData ]; then
