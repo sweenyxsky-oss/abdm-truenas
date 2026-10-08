@@ -131,22 +131,16 @@ internal fun Application.setupRouting(
                 }
             }
             post("/browser/restart") {
-                // The entrypoint supervisor restarts Chromium as soon as it exits.
-                val pid = runCatching { File(CHROMIUM_PID_FILE).readText().trim().toLong() }.getOrNull()
-                val handle = pid?.let { ProcessHandle.of(it).orElse(null) }
-                if (handle == null || !handle.isAlive) {
-                    call.respondText("NOT_RUNNING")
-                } else {
-                    withContext(Dispatchers.IO) {
-                        val children = handle.descendants().toList()
-                        handle.destroy()
-                        children.forEach { it.destroy() }
-                        val exited = runCatching { handle.onExit().get(5, java.util.concurrent.TimeUnit.SECONDS); true }.getOrDefault(false)
-                        if (!exited) handle.destroyForcibly()
-                        children.filter { it.isAlive }.forEach { it.destroyForcibly() }
-                    }
-                    call.respondText("OK")
+                // The entrypoint's restart watcher kills all Firefox processes when this
+                // file appears; its supervisor then starts Firefox again.
+                val ok = withContext(Dispatchers.IO) {
+                    runCatching {
+                        val f = File(File(CHROMIUM_PID_FILE).parentFile, "restart.request")
+                        f.parentFile.mkdirs()
+                        f.writeText(System.currentTimeMillis().toString())
+                    }.isSuccess
                 }
+                call.respondText(if (ok) "OK" else "FAILED")
             }
             get("/categories") {
                 call.respondText(json.encodeToString(ListSerializer(ApiCategoryModel.serializer()), integrationHandler.listCategories()), ContentType.Application.Json)
