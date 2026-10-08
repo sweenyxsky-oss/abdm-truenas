@@ -86,13 +86,18 @@ internal fun Application.setupRouting(
                     )
                 }
                 itemsToAdd.onFailure { it.printStackTrace() }
-                itemsToAdd.getOrThrow().let { newImportRequest ->
-                    integrationHandler.addDownloadByGui(
-                        AddDownloadsFromIntegration(
-                            newImportRequest.items,
-                            newImportRequest.options,
+                val newImportRequest = itemsToAdd.getOrThrow()
+                // The browser extension aborts requests after 500ms, so reply first and
+                // resolve file names / add the download in the background.
+                call.application.launch(Dispatchers.IO) {
+                    runCatching {
+                        integrationHandler.addDownloadByGui(
+                            AddDownloadsFromIntegration(
+                                newImportRequest.items,
+                                newImportRequest.options,
+                            )
                         )
-                    )
+                    }.onFailure { it.printStackTrace() }
                 }
                 call.respondText("OK")
             }
@@ -128,8 +133,20 @@ internal fun Application.setupRouting(
             post("/browser/restart") {
                 // The entrypoint supervisor restarts Chromium as soon as it exits.
                 val pid = runCatching { File(CHROMIUM_PID_FILE).readText().trim().toLong() }.getOrNull()
-                val stopped = pid?.let { p -> ProcessHandle.of(p).map { it.destroy() }.orElse(false) } ?: false
-                call.respondText(if (stopped) "OK" else "NOT_RUNNING")
+                val handle = pid?.let { ProcessHandle.of(it).orElse(null) }
+                if (handle == null || !handle.isAlive) {
+                    call.respondText("NOT_RUNNING")
+                } else {
+                    withContext(Dispatchers.IO) {
+                        val children = handle.descendants().toList()
+                        handle.destroy()
+                        children.forEach { it.destroy() }
+                        val exited = runCatching { handle.onExit().get(5, java.util.concurrent.TimeUnit.SECONDS); true }.getOrDefault(false)
+                        if (!exited) handle.destroyForcibly()
+                        children.filter { it.isAlive }.forEach { it.destroyForcibly() }
+                    }
+                    call.respondText("OK")
+                }
             }
             get("/categories") {
                 call.respondText(json.encodeToString(ListSerializer(ApiCategoryModel.serializer()), integrationHandler.listCategories()), ContentType.Application.Json)
