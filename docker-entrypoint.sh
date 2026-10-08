@@ -2,7 +2,7 @@
 set -eu
 
 LOG_DIR=/config/system/browser
-PID_FILE="$LOG_DIR/browser.pid"
+PID_FILE="$LOG_DIR/chromium.pid"
 PROFILE=/config/firefox
 ABDM_EXT_ID=firefox-integration@abdownloadmanager.com
 UBLOCK_EXT_ID=uBOLiteRedux@raymondhill.net
