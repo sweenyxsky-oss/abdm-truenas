@@ -10,13 +10,10 @@ WORKDIR /src/browser-extension
 RUN git clone --depth 1 https://github.com/amir1376/ab-download-manager-browser-integration.git .
 RUN sed -i 's/silentAddDownload: z.boolean().catch(false)/silentAddDownload: z.boolean().catch(true)/' src/configs/Config.ts && \
     sed -i 's/silentStartDownload: z.boolean().catch(false)/silentStartDownload: z.boolean().catch(true)/' src/configs/Config.ts
-RUN npm ci --ignore-scripts && npm run build:chrome
+RUN npm ci --ignore-scripts && npm run build:firefox
 WORKDIR /src/ublock-origin-lite
-RUN wget -q -O /tmp/uBOLite_2026.926.2202.chromium.zip https://github.com/uBlockOrigin/uBOL-home/releases/download/2026.926.2202/uBOLite_2026.926.2202.chromium.zip && \
-    echo "9a0d94e832fde9430f64817ff1ba3f34040f19caa113a24e6d84aad1d05eb1aa  /tmp/uBOLite_2026.926.2202.chromium.zip" | sha256sum -c - && \
-    unzip -q /tmp/uBOLite_2026.926.2202.chromium.zip -d /src/ublock-origin-lite && \
-    test -f /src/ublock-origin-lite/manifest.json && \
-    rm /tmp/uBOLite_2026.926.2202.chromium.zip
+RUN wget -q -O /src/ublock-origin-lite.xpi https://github.com/uBlockOrigin/uBOL-home/releases/download/2026.1006.1931/uBOLite_2026.1006.1931.firefox.signed.xpi && \
+    echo "585689426df1a3644e6c967a1a1a9986ca9ae5c8dcff6004f1e76889fb8b3386  /src/ublock-origin-lite.xpi" | sha256sum -c -
 
 FROM debian:bookworm-slim
 LABEL org.opencontainers.image.source="https://github.com/sweenyxsky-oss/abdm-truenas"
@@ -26,13 +23,13 @@ ENV HOME=/config \
     TZ=Asia/Riyadh \
     ABDM_DOWNLOAD_FOLDER=/downloads
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    tini procps chromium xvfb x11vnc novnc dbus-x11 fonts-liberation fonts-noto-core fonts-dejavu-core \
+    tini procps firefox-esr xvfb x11vnc novnc dbus-x11 fonts-liberation fonts-noto-core fonts-dejavu-core \
     libx11-6 libxext6 libxrender1 libxtst6 libxi6 libgl1 libfontconfig1 libfreetype6 libasound2 \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /opt/abdm
 COPY --from=build /src/desktop/app/build/compose/binaries/main-release/app/ABDownloadManager /opt/abdm
-COPY --from=browser-extension /src/browser-extension/dist/chrome /opt/abdm/browser-extension
-COPY --from=browser-extension /src/ublock-origin-lite /opt/abdm/ublock-origin-lite
+COPY --from=browser-extension /src/browser-extension/dist/firefox /opt/abdm/browser-extension
+COPY --from=browser-extension /src/ublock-origin-lite.xpi /opt/abdm/ublock-origin-lite.xpi
 COPY docker-entrypoint.sh /opt/abdm/docker-entrypoint.sh
 RUN sed -i 's/\r$//' /opt/abdm/docker-entrypoint.sh && test -f /usr/share/novnc/vnc.html
 RUN printf "/config\n" > /opt/abdm/.portable && mkdir -p /config /downloads /temp && chmod +x /opt/abdm/docker-entrypoint.sh && useradd --system --uid 568 --home /config --shell /usr/sbin/nologin abdm && \
