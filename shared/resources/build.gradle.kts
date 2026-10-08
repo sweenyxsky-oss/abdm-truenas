@@ -3,7 +3,6 @@ import java.util.Properties
 plugins {
     id(MyPlugins.kotlinMultiplatform)
     id(MyPlugins.composeBase)
-    id(Plugins.Android.multiplatformLibrary)
 }
 val ourPackageName = "com.abdownloadmanager.resources"
 val propertiesToKotlinTask = tasks.register("propertiesToKotlinTask", PropertiesToKotlinTask::class) {
@@ -29,15 +28,7 @@ val generateResObject = tasks.register("generateResObject", GenerateResObject::c
 
 kotlin {
     jvm("desktop")
-    android {
-        compileSdk = libs.versions.androidCompileSdk.get().toInt()
-        namespace = "com.abdownloadmanager.resources"
-        minSdk = 26
-    }
     sourceSets {
-        androidMain {
-            resources.srcDir("src/commonMain/resources")
-        }
         commonMain {
             kotlin {
                 srcDirs(propertiesToKotlinTask.map { it.outputDir })

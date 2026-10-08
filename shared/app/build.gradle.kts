@@ -9,17 +9,11 @@ plugins {
     id(MyPlugins.kotlinMultiplatform)
     id(MyPlugins.composeBase)
     id(Plugins.Kotlin.serialization)
-    id(Plugins.Android.multiplatformLibrary)
     id(Plugins.buildConfig)
     id(Plugins.ksp)
 }
 kotlin {
     jvm("desktop")
-    android {
-        compileSdk = libs.versions.androidCompileSdk.get().toInt()
-        namespace = "com.abdownloadmanager.shared"
-        minSdk = 26
-    }
     sourceSets {
         commonMain.dependencies {
             api(libs.compose.runtime)
@@ -59,13 +53,6 @@ kotlin {
             api(libs.markdownRenderer.core)
             api(libs.compose.reorderable)
         }
-        androidMain {
-            dependencies {
-                api(libs.androidx.core.ktx)
-                api(libs.androidx.activity.compose)
-            }
-        }
-        val androidMain = getByName("androidMain")
         val desktopMain = getByName("desktopMain")
         desktopMain.dependencies {
             implementation(libs.nucleus.darkmodeDetector)
@@ -75,7 +62,6 @@ kotlin {
 
 
 dependencies {
-    add("kspAndroid", libs.arrow.opticKsp)
     add("kspDesktop", libs.arrow.opticKsp)
 }
 
