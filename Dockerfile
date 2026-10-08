@@ -26,7 +26,7 @@ ENV HOME=/config \
     TZ=Asia/Riyadh \
     ABDM_DOWNLOAD_FOLDER=/downloads
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    chromium xvfb x11vnc novnc dbus-x11 fonts-liberation \
+    tini procps chromium xvfb x11vnc novnc dbus-x11 fonts-liberation fonts-noto-core fonts-dejavu-core \
     libx11-6 libxext6 libxrender1 libxtst6 libxi6 libgl1 libfontconfig1 libfreetype6 libasound2 \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /opt/abdm
@@ -34,9 +34,10 @@ COPY --from=build /src/desktop/app/build/compose/binaries/main-release/app/ABDow
 COPY --from=browser-extension /src/browser-extension/dist/chrome /opt/abdm/browser-extension
 COPY --from=browser-extension /src/ublock-origin-lite /opt/abdm/ublock-origin-lite
 COPY docker-entrypoint.sh /opt/abdm/docker-entrypoint.sh
+RUN sed -i 's/\r$//' /opt/abdm/docker-entrypoint.sh && test -f /usr/share/novnc/vnc.html
 RUN printf "/config\n" > /opt/abdm/.portable && mkdir -p /config /downloads /temp && chmod +x /opt/abdm/docker-entrypoint.sh && useradd --system --uid 568 --home /config --shell /usr/sbin/nologin abdm && \
     chown -R abdm:abdm /opt/abdm /config /downloads /temp
 USER abdm
 EXPOSE 15151
 VOLUME ["/config", "/downloads", "/temp"]
-ENTRYPOINT ["/opt/abdm/docker-entrypoint.sh"]
+ENTRYPOINT ["/usr/bin/tini", "--", "/opt/abdm/docker-entrypoint.sh"]

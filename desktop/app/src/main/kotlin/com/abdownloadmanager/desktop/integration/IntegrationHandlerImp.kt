@@ -35,6 +35,8 @@ import ir.amirab.downloader.utils.OnDuplicateStrategy
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
+const val HEADLESS_PROPERTY = "abdm.headless"
+
 class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
     private data class PartSpeedSample(val downloaded: Long, val timestamp: Long)
     private val partSpeedSamples = ConcurrentHashMap<String, PartSpeedSample>()
@@ -49,6 +51,20 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
     override suspend fun addDownloadByGui(
         request: AddDownloadsFromIntegration
     ) {
+        if (System.getProperty(HEADLESS_PROPERTY) == "true") {
+            // TrueNAS headless mode has no desktop window, so the GUI "add download"
+            // dialog can never appear. Add captured browser downloads directly instead.
+            val results = request.items.distinctBy { it.link }.map { item ->
+                runCatching {
+                    addDownload(NewDownloadTask(downloadSource = item, startDownload = true))
+                }.onFailure { it.printStackTrace() }
+            }
+            // If nothing could be added, fail so the extension lets Chromium handle it.
+            if (results.isNotEmpty() && results.none { it.isSuccess }) {
+                throw results.first().exceptionOrNull()!!
+            }
+            return
+        }
         val list = request.items
         val options = request.options
         appComponent.externalCredentialComingIntoApp(

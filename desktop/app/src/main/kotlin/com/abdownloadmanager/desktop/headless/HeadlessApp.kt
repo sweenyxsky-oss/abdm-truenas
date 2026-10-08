@@ -25,6 +25,8 @@ object HeadlessApp : KoinComponent {
 
     @JvmStatic
     fun main(args: Array<String>) {
+        // Tells the integration layer there is no desktop UI (captured downloads are added directly).
+        System.setProperty(com.abdownloadmanager.desktop.integration.HEADLESS_PROPERTY, "true")
         runBlocking {
             EntrypointInitializer.boot(
                 debug = args.any { it == "--debug" },

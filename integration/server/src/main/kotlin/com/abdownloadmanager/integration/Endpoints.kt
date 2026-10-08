@@ -15,6 +15,12 @@ import io.ktor.server.websocket.WebSockets
 import io.ktor.server.websocket.webSocket
 import io.ktor.server.http.content.staticFiles
 import io.ktor.websocket.Frame
+import io.ktor.websocket.CloseReason
+import io.ktor.websocket.close
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.withContext
+import java.net.InetAddress
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -46,7 +52,12 @@ internal fun Application.setupRouting(
 ) {
     val apiKey = settings.apiKey
     val browserToken = UUID.randomUUID().toString()
-    install(WebSockets) { maxFrameSize = Long.MAX_VALUE }
+    install(WebSockets) {
+        maxFrameSize = Long.MAX_VALUE
+        // Keep the noVNC stream alive through TrueNAS / reverse-proxy idle timeouts.
+        pingPeriodMillis = 20_000
+        timeoutMillis = 60_000
+    }
     install(Authentication) {
         apiKey {
             headerName = "X-API-Key"
@@ -55,8 +66,12 @@ internal fun Application.setupRouting(
                     AppPrincipal(receivedKey)
                 } else null
             }
-            skipWhen {
-                apiKey == null
+            // The bundled Chromium + ABDM extension run inside this container and talk to
+            // http://localhost:15151 without an API key. Loopback callers can only come
+            // from inside the container (Docker port mappings arrive from the bridge IP),
+            // so allow them through; every network caller still needs the key.
+            skipWhen { call ->
+                apiKey == null || isLoopbackAddress(call.request.local.remoteAddress)
             }
         }
     }
@@ -98,7 +113,7 @@ internal fun Application.setupRouting(
             get("/browser/session") {
                 val vncReady = runCatching { Socket("127.0.0.1", 5900).use { true } }.getOrDefault(false)
                 val chromiumReady = runCatching {
-                    File("/config/system/browser/chromium.pid").readText().trim().toLongOrNull()?.let { pid -> ProcessHandle.of(pid).map { it.isAlive }.orElse(false) } ?: false
+                    File(CHROMIUM_PID_FILE).readText().trim().toLongOrNull()?.let { pid -> ProcessHandle.of(pid).map { it.isAlive }.orElse(false) } ?: false
                 }.getOrDefault(false)
                 val ready = vncReady && chromiumReady
                 if (!ready) {
@@ -109,6 +124,12 @@ internal fun Application.setupRouting(
                         ContentType.Application.Json,
                     )
                 }
+            }
+            post("/browser/restart") {
+                // The entrypoint supervisor restarts Chromium as soon as it exits.
+                val pid = runCatching { File(CHROMIUM_PID_FILE).readText().trim().toLong() }.getOrNull()
+                val stopped = pid?.let { p -> ProcessHandle.of(p).map { it.destroy() }.orElse(false) } ?: false
+                call.respondText(if (stopped) "OK" else "NOT_RUNNING")
             }
             get("/categories") {
                 call.respondText(json.encodeToString(ListSerializer(ApiCategoryModel.serializer()), integrationHandler.listCategories()), ContentType.Application.Json)
@@ -219,43 +240,59 @@ internal fun Application.setupRouting(
         staticFiles("/browser/novnc", File("/usr/share/novnc"))
         webSocket("/browser/websockify") {
             if (call.request.queryParameters["token"] != browserToken) {
-                outgoing.send(Frame.Close(io.ktor.websocket.CloseReason(io.ktor.websocket.CloseReason.Codes.VIOLATED_POLICY, "Invalid browser session")))
+                close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "Invalid browser session"))
                 return@webSocket
             }
-            val socket = runCatching { Socket("127.0.0.1", 5900) }.getOrElse {
-                outgoing.send(Frame.Close(io.ktor.websocket.CloseReason(io.ktor.websocket.CloseReason.Codes.INTERNAL_ERROR, "Browser display unavailable")))
+            val socket = runCatching {
+                withContext(Dispatchers.IO) { Socket("127.0.0.1", 5900).apply { tcpNoDelay = true } }
+            }.getOrElse {
+                close(CloseReason(CloseReason.Codes.INTERNAL_ERROR, "Browser display unavailable"))
                 return@webSocket
             }
-            socket.use { tcp ->
-                val input = tcp.getInputStream()
-                val output = tcp.getOutputStream()
-                val tcpToWeb = launch(Dispatchers.IO) {
-                    val buffer = ByteArray(16384)
-                    try {
-                        while (true) {
-                            val count = input.read(buffer)
-                            if (count < 0) break
-                            send(Frame.Binary(true, buffer.copyOf(count)))
-                        }
-                    } catch (_: Throwable) {
-                    }
-                }
+            val session = this
+            val input = socket.getInputStream()
+            val output = socket.getOutputStream()
+            // VNC -> browser. When the VNC side ends, close the WebSocket too so
+            // noVNC notices and reconnects instead of hanging on a dead stream.
+            val tcpToWeb = launch(Dispatchers.IO) {
+                val buffer = ByteArray(65536)
                 try {
-                    for (frame in incoming) {
-                        when (frame) {
-                            is Frame.Binary -> output.write(frame.data)
-                            is Frame.Text -> output.write(frame.data)
-                            else -> Unit
-                        }
+                    while (isActive) {
+                        val count = input.read(buffer)
+                        if (count < 0) break
+                        if (count > 0) session.outgoing.send(Frame.Binary(true, buffer.copyOf(count)))
+                    }
+                } catch (_: Throwable) {
+                } finally {
+                    runCatching { session.close(CloseReason(CloseReason.Codes.NORMAL, "Browser display closed")) }
+                }
+            }
+            try {
+                for (frame in incoming) {
+                    val data = when (frame) {
+                        is Frame.Binary -> frame.data
+                        is Frame.Text -> frame.data
+                        else -> null
+                    } ?: continue
+                    withContext(Dispatchers.IO) {
+                        output.write(data)
                         output.flush()
                     }
-                } finally {
-                    runCatching { tcp.close() }
-                    tcpToWeb.cancel()
-                    tcpToWeb.join()
                 }
+            } catch (_: Throwable) {
+            } finally {
+                runCatching { socket.close() }
+                tcpToWeb.cancelAndJoin()
             }
         }
         staticResources("/", "web")
     }
+}
+
+private const val CHROMIUM_PID_FILE = "/config/system/browser/chromium.pid"
+
+private fun isLoopbackAddress(address: String?): Boolean {
+    if (address.isNullOrBlank()) return false
+    if (address == "localhost") return true
+    return runCatching { InetAddress.getByName(address.trim('[', ']')).isLoopbackAddress }.getOrDefault(false)
 }

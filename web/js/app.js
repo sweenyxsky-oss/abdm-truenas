@@ -85,21 +85,30 @@ function renderQueue(){
 function renderBrowser(){
   const session=state.browserSession;
   if(!session?.enabled||!session?.ready){
-    return '<div class="card empty"><strong>Browser is starting</strong><span>The Chromium/noVNC session is not ready yet. Open this tab again in a moment.</span></div>';
+    scheduleBrowserRetry();
+    return '<div class="card empty"><strong>Browser is starting</strong><span>Waiting for the Chromium session… this page will open it automatically.</span></div>';
   }
-  const token=encodeURIComponent(session.token||"");
-  const url=window.location.origin+"/browser/novnc/vnc.html?autoconnect=true&resize=remote&path=browser/websockify&token="+token;
+  // noVNC 1.3 ignores a separate "token" parameter, so the token must be part of the WebSocket path.
+  const wsPath=encodeURIComponent("browser/websockify?token="+(session.token||""));
+  const url=window.location.origin+"/browser/novnc/vnc.html?autoconnect=true&reconnect=true&reconnect_delay=2000&resize=scale&show_dot=true&path="+wsPath;
   return '<div class="browser-shell">'+
-    '<div class="browser-head"><div><strong>Chromium</strong><span>Real Chromium session · downloads are captured by ABDM</span></div><button class="secondary" onclick="reloadBrowser()">Reload browser</button></div>'+
+    '<div class="browser-head"><div><strong>Chromium</strong><span>Real Chromium session · downloads are captured by ABDM</span></div><div class="actions"><button class="secondary" onclick="reloadBrowser()">Reconnect</button><button class="secondary" onclick="restartChromium()">Restart Chromium</button></div></div>'+
     '<div class="browser-frame-wrap"><iframe class="browser-frame" src="'+esc(url)+'" title="Chromium browser" allow="clipboard-read; clipboard-write"></iframe></div>'+
     '</div>';
 }
+let browserRetryTimer=null;
+function scheduleBrowserRetry(){
+  if(browserRetryTimer)return;
+  browserRetryTimer=setTimeout(async()=>{browserRetryTimer=null;if(state.view!=="browser")return;await loadBrowserSession(true);if(state.view==="browser")render()},3000);
+}
 window.reloadBrowser=async function(){
-  try{
-    state.browserSession=null;
-    await loadBrowserSession(false);
-    render();
-  }catch(e){alert("Browser is unavailable: "+e.message)}
+  state.browserSession=null;
+  render();
+  await loadBrowserSession(false);
+}
+window.restartChromium=async function(){
+  try{await ABDM_API.restartBrowser()}catch(e){alert("Restart failed: "+e.message);return}
+  setTimeout(()=>reloadBrowser(),4000);
 }
 function renderCategories(){
   const p=paginate(state.categories);
