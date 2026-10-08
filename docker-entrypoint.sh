@@ -29,6 +29,10 @@ user_pref("extensions.autoDisableScopes", 0);
 user_pref("extensions.enabledScopes", 15);
 user_pref("extensions.update.autoUpdateDefault", false);
 user_pref("signon.rememberSignons", true);
+// No desktop notification service exists in the container: use Firefox's own pop-ups
+// so add-on notices like "Download intercepted" are visible.
+user_pref("alerts.useSystemBackend", false);
+user_pref("alerts.showFavicons", true);
 EOF
 
 # Install the ABDM download-capture extension (unpacked; signature check is
@@ -64,6 +68,29 @@ start_browser_stack() {
     x11vnc -display :99 -forever -shared -rfbport 5900 -nopw -listen 127.0.0.1 \
         -noxdamage -quiet >"$LOG_DIR/x11vnc.log" 2>&1 &
     echo "Browser display started: Xvfb=$XVFB_PID x11vnc=$!" >"$LOG_DIR/browser-startup.log"
+
+    # Restart watcher: the web UI's "Restart Firefox" button drops a request file here.
+    # Kills every Firefox process (main + content/helper processes) from the shell,
+    # then the supervisor below starts it again.
+    (
+        while true; do
+            if [ -e "$LOG_DIR/restart.request" ]; then
+                rm -f "$LOG_DIR/restart.request"
+                echo "$(date '+%F %T') Restart requested" >>"$LOG_DIR/browser-startup.log"
+                for sig in TERM KILL; do
+                    for d in /proc/[0-9]*; do
+                        pid=${d#/proc/}
+                        if [ "$pid" = "$$" ]; then continue; fi
+                        if tr '\0' ' ' <"$d/cmdline" 2>/dev/null | grep -q '^[^ ]*firefox'; then
+                            kill -$sig "$pid" 2>/dev/null || true
+                        fi
+                    done
+                    if [ "$sig" = TERM ]; then sleep 4; fi
+                done
+            fi
+            sleep 1
+        done
+    ) &
 
     # Supervisor: keep Firefox running, restart it if it crashes or is closed.
     (
