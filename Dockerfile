@@ -27,14 +27,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libx11-6 libxext6 libxrender1 libxtst6 libxi6 libgl1 libfontconfig1 libfreetype6 libasound2 \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /opt/abdm
-COPY --from=build /src/desktop/app/build/compose/binaries/main-release/app/ABDownloadManager /opt/abdm
-COPY --from=browser-extension /src/browser-extension/dist/firefox /opt/abdm/browser-extension
-COPY --from=browser-extension /src/ublock-origin.xpi /opt/abdm/ublock-origin.xpi
-COPY docker-entrypoint.sh /opt/abdm/docker-entrypoint.sh
+RUN useradd --system --uid 568 --home /config --shell /usr/sbin/nologin abdm && \
+    mkdir -p /config /downloads /temp && chown abdm:abdm /opt/abdm /config /downloads /temp
+COPY --chown=abdm:abdm --from=build /src/desktop/app/build/compose/binaries/main-release/app/ABDownloadManager /opt/abdm
+COPY --chown=abdm:abdm --from=browser-extension /src/browser-extension/dist/firefox /opt/abdm/browser-extension
+COPY --chown=abdm:abdm --from=browser-extension /src/ublock-origin.xpi /opt/abdm/ublock-origin.xpi
+COPY --chown=abdm:abdm --chmod=755 docker-entrypoint.sh /opt/abdm/docker-entrypoint.sh
 RUN sed -i 's/\r$//' /opt/abdm/docker-entrypoint.sh && test -f /usr/share/novnc/vnc.html
-RUN printf "/config\n" > /opt/abdm/.portable && mkdir -p /config /downloads /temp && chmod +x /opt/abdm/docker-entrypoint.sh && useradd --system --uid 568 --home /config --shell /usr/sbin/nologin abdm && \
-    chown -R abdm:abdm /opt/abdm /config /downloads /temp
 USER abdm
+RUN printf "/config\n" > /opt/abdm/.portable
 EXPOSE 15151
 VOLUME ["/config", "/downloads", "/temp"]
 ENTRYPOINT ["/usr/bin/tini", "--", "/opt/abdm/docker-entrypoint.sh"]

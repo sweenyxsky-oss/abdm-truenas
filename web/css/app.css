@@ -68,6 +68,19 @@ dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);bo
 .abdm-empty-icon{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;background:var(--panel2);border:1px solid var(--line);font-size:23px;margin-bottom:5px}
 .abdm-home .pagination{padding:9px 4px}
 @media(max-width:850px){.abdm-home{margin:-18px -12px 0;min-height:calc(100vh - 70px)}.home-sidebar{width:210px;flex-basis:210px}.home-search{width:170px}.home-add span{display:none}}
+@media(max-width:650px){
+  .abdm-home{flex-direction:column}
+  .home-sidebar{width:100%;flex:0 0 auto;display:flex;align-items:center;gap:6px;padding:8px;overflow-x:auto;overflow-y:hidden;border-right:0;border-bottom:1px solid var(--line);-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;touch-action:pan-x pan-y;scrollbar-width:thin}
+  .home-sidebar-title{flex:0 0 auto;padding:0 6px;white-space:nowrap}
+  .home-filter{width:auto;flex:0 0 auto;min-height:40px;white-space:nowrap}
+  .home-filter b{margin-left:4px}
+  .home-divider{width:1px;height:24px;flex:0 0 1px;margin:0 4px}
+  .queue-title{margin-top:0;border-left:1px solid var(--line);padding-left:12px}
+  .home-content{width:100%}
+  .home-toolbar{flex-wrap:wrap;height:auto;min-height:44px;gap:8px}
+  .home-search{flex:1;min-width:120px;width:auto}
+  .home-footer{flex-wrap:wrap;gap:8px 14px;padding:8px}
+}
 
 .parts-section{margin-top:16px;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel)}
 .parts-head{display:flex;align-items:center;justify-content:space-between;padding:13px 14px;border-bottom:1px solid var(--line)}

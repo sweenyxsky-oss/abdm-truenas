@@ -1,0 +1,3 @@
+- Keep TrueNAS core-service registration separate from desktop GUI registration, so headless startup cannot instantiate desktop windows.
+- Apply application ownership during Docker COPY, not with a later recursive chown, to avoid duplicate image layers.
+- Verify headless download capture and API startup with the real-service regression test before changing runtime dependency registration.

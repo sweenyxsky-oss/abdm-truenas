@@ -41,7 +41,6 @@ const val HEADLESS_PROPERTY = "abdm.headless"
 class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
     private data class PartSpeedSample(val downloaded: Long, val timestamp: Long)
     private val partSpeedSamples = ConcurrentHashMap<String, PartSpeedSample>()
-    val appComponent by inject<AppComponent>()
     val downloadSystem by inject<DownloadSystem>()
     val queueManager by inject<QueueManager>()
     val appSettings by inject<AppRepository>()
@@ -62,13 +61,14 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
             }
             // If nothing could be added, fail so the extension lets Chromium handle it.
             if (results.isNotEmpty() && results.none { it.isSuccess }) {
-                throw results.first().exceptionOrNull()!!
+                val failure = results.firstNotNullOfOrNull { it.exceptionOrNull() }
+                if (failure != null) throw failure
             }
             return
         }
         val list = request.items
         val options = request.options
-        appComponent.externalCredentialComingIntoApp(
+        getKoin().get<AppComponent>().externalCredentialComingIntoApp(
             list.map {
                 convertToDownloadSystemCredentials(it)
             },

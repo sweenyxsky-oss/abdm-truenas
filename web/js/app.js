@@ -26,7 +26,7 @@ function renderDashboard(){
   const speed=state.allDownloads.reduce((n,x)=>n+Number(x.raw?.speed||0),0);
   const categoryItems=cat=>state.allDownloads.filter(x=>Number(x.raw?.categoryId??x.categoryId)===Number(cat.id)).length;
   return '<div class="abdm-home">'+
-    '<aside class="home-sidebar">'+
+    '<aside class="home-sidebar" aria-label="Download categories and queues" tabindex="0" data-scroll-key="home-filters">'+
       '<div class="home-sidebar-title">Categories</div>'+
       '<button class="home-filter active"><span class="home-filter-icon">◉</span><span>All downloads</span><b>'+state.allDownloads.length+'</b></button>'+
       '<button class="home-filter"><span class="home-filter-icon">↓</span><span>Downloading</span><b>'+active+'</b></button>'+

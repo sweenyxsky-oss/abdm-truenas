@@ -3,40 +3,22 @@ package com.abdownloadmanager.desktop.di
 import com.abdownloadmanager.github.GithubApi
 import com.abdownloadmanager.UpdateDownloadLocationProvider
 import com.abdownloadmanager.UpdateManager
-import com.abdownloadmanager.desktop.DesktopAddDownloadDialogManager
 import com.abdownloadmanager.desktop.AppArguments
 import com.abdownloadmanager.integration.IntegrationHandler
-import com.abdownloadmanager.desktop.AppComponent
-import com.abdownloadmanager.desktop.DesktopDownloadDialogManager
-import com.abdownloadmanager.shared.pagemanager.EditDownloadDialogManager
-import com.abdownloadmanager.shared.pagemanager.FileChecksumDialogManager
-import com.abdownloadmanager.shared.pagemanager.NotificationSender
-import com.abdownloadmanager.shared.pagemanager.PerHostSettingsPageManager
-import com.abdownloadmanager.shared.pagemanager.QueuePageManager
 import com.abdownloadmanager.shared.util.SharedConstants
-import com.abdownloadmanager.desktop.PowerActionManager
-import com.abdownloadmanager.desktop.actions.onevennts.DesktopOnDownloadCompletionActionProvider
-import com.abdownloadmanager.desktop.actions.onevennts.DesktopOnQueueEventActionProvider
 import com.abdownloadmanager.desktop.integration.IntegrationHandlerImp
-import com.abdownloadmanager.desktop.pages.category.DesktopCategoryDialogManager
-import com.abdownloadmanager.desktop.pages.settings.FontManager
-import com.abdownloadmanager.shared.ui.theme.ThemeManager
 import ir.amirab.downloader.queue.QueueManager
 import com.abdownloadmanager.desktop.repository.AppRepository
 import com.abdownloadmanager.desktop.storage.*
 import com.abdownloadmanager.shared.util.ui.icon.MyIcons
-import com.abdownloadmanager.shared.util.ui.theme.ISystemThemeDetector
 import com.abdownloadmanager.desktop.utils.*
 import com.abdownloadmanager.desktop.nativemessaging.NativeMessaging
 import com.abdownloadmanager.desktop.utils.proxy.AutoConfigurableProxyProviderForDesktop
 import com.abdownloadmanager.desktop.utils.proxy.DesktopSystemProxySelectorProvider
 import com.abdownloadmanager.desktop.utils.proxy.ProxyCachingConfig
-import com.abdownloadmanager.desktop.utils.renderapi.CustomRenderApi
 import com.abdownloadmanager.integration.model.HLSDownloadCredentialsFromIntegration
 import com.abdownloadmanager.integration.model.HttpDownloadCredentialsFromIntegration
 import com.abdownloadmanager.integration.model.IDownloadCredentialsFromIntegration
-import com.arkivanov.decompose.DefaultComponentContext
-import com.arkivanov.essenty.lifecycle.LifecycleRegistry
 import ir.amirab.downloader.DownloadManagerMinimalControl
 import ir.amirab.downloader.DownloadSettings
 import ir.amirab.downloader.connection.HttpDownloaderClient
@@ -49,7 +31,6 @@ import com.abdownloadmanager.resources.ABDMLanguageResources
 import com.abdownloadmanager.shared.downloaderinui.DownloaderInUiRegistry
 import com.abdownloadmanager.shared.downloaderinui.hls.HLSDownloaderInUi
 import com.abdownloadmanager.shared.downloaderinui.http.HttpDownloaderInUi
-import com.abdownloadmanager.shared.pagemanager.SettingsPageManager
 import com.abdownloadmanager.shared.repository.BaseAppRepository
 import com.abdownloadmanager.shared.storage.appsettings.BaseAppSettingsStorage
 import com.abdownloadmanager.shared.storage.DnsSettings
@@ -58,20 +39,15 @@ import com.abdownloadmanager.shared.storage.ExtraQueueSettingsStorage
 import com.abdownloadmanager.shared.storage.IDNSSettingsStorage
 import com.abdownloadmanager.shared.storage.IExtraDownloadSettingsStorage
 import com.abdownloadmanager.shared.storage.IExtraQueueSettingsStorage
-import com.abdownloadmanager.shared.storage.ISelectQueueStorage
 import com.abdownloadmanager.shared.storage.PerHostSettingsDatastoreStorage
 import com.abdownloadmanager.shared.storage.ProxyDatastoreStorage
-import com.abdownloadmanager.shared.storage.SelectQueueSettings
 import com.abdownloadmanager.shared.storage.appsettings.DesktopSettingsSchema
 import com.abdownloadmanager.shared.storage.impl.DNSStorage
-import com.abdownloadmanager.shared.storage.impl.SelectQueueStorage
 import com.abdownloadmanager.shared.ui.theme.ThemeSettingsStorage
-import com.abdownloadmanager.shared.ui.widget.NotificationManager
 import com.abdownloadmanager.shared.updater.UpdateDownloaderViaDownloadSystem
 import com.abdownloadmanager.shared.util.AppVersion
 import com.abdownloadmanager.shared.util.DefinedPaths
 import com.abdownloadmanager.shared.util.DesktopDiskStat
-import com.abdownloadmanager.shared.util.DesktopSystemThemeDetector
 import com.abdownloadmanager.shared.util.SizeAndSpeedUnitProvider
 import com.abdownloadmanager.shared.util.UserAgentProviderFromSettings
 import com.abdownloadmanager.shared.util.*
@@ -99,13 +75,9 @@ import com.abdownloadmanager.shared.util.downloaderror.DownloadErrorMapperRegist
 import com.abdownloadmanager.shared.util.downloaderror.faileddownloads.FailedDownloadErrorStorageInMemory
 import com.abdownloadmanager.shared.util.downloaderror.faileddownloads.FailedDownloads
 import com.abdownloadmanager.shared.util.downloaderror.faileddownloads.IFailedDownloadErrorStorage
-import com.abdownloadmanager.shared.util.keepawake.KeepAwakeManager
-import com.abdownloadmanager.shared.util.keepawake.platformKeepAwake
 import com.abdownloadmanager.shared.util.notification.INotificationSettingsStorage
-import com.abdownloadmanager.shared.util.ondownloadcompletion.OnDownloadCompletionActionProvider
 import com.abdownloadmanager.shared.util.ondownloadcompletion.OnDownloadCompletionActionRunner
 import com.abdownloadmanager.shared.util.onqueuecompletion.OnQueueEventActionRunner
-import com.abdownloadmanager.shared.util.onqueuecompletion.OnQueueCompletionActionProvider
 import com.abdownloadmanager.shared.util.perhostsettings.IPerHostSettingsStorage
 import com.abdownloadmanager.shared.util.perhostsettings.PerHostSettingsItem
 import com.abdownloadmanager.shared.util.perhostsettings.PerHostSettingsManager
@@ -113,7 +85,6 @@ import com.abdownloadmanager.shared.util.ui.IMyIcons
 import com.abdownloadmanager.shared.util.proxy.IProxyStorage
 import com.abdownloadmanager.shared.util.proxy.ProxyData
 import com.abdownloadmanager.shared.util.proxy.ProxyManager
-import com.arkivanov.essenty.lifecycle.Lifecycle
 import ir.amirab.downloader.DownloaderRegistry
 import ir.amirab.downloader.connection.UserAgentProvider
 import ir.amirab.downloader.connection.proxy.AutoConfigurableProxyProvider
@@ -177,9 +148,6 @@ val downloaderModule = module {
     }
     single<IDiskStat> {
         DesktopDiskStat()
-    }
-    single<ISystemThemeDetector> {
-        DesktopSystemThemeDetector()
     }
     single {
         QueueManager(get(), get())
@@ -353,12 +321,6 @@ val downloadSystemModule = module {
     }.apply {
         bind<IExtraQueueSettingsStorage<*>>()
     }
-    single<OnDownloadCompletionActionProvider> {
-        DesktopOnDownloadCompletionActionProvider(get())
-    }
-    single<OnQueueCompletionActionProvider> {
-        DesktopOnQueueEventActionProvider(get())
-    }
     single {
         OnDownloadCompletionActionRunner(
             downloadManagerMinimalControl = get(),
@@ -488,15 +450,12 @@ val nativeMessagingModule = module {
     }
 }
 
-val appModule = module {
+val coreModule = module {
     includes(downloaderModule)
     includes(downloadSystemModule)
     includes(coroutineModule)
     includes(jsonModule)
     includes(integrationModule)
-    includes(updaterModule)
-    includes(startUpModule)
-    includes(nativeMessagingModule)
 //    single {
 //        NetworkChecker(get())
 //    }
@@ -517,12 +476,6 @@ val appModule = module {
     }.apply {
         bind<BaseAppRepository>()
         bind<SizeAndSpeedUnitProvider>()
-    }
-    single {
-        ThemeManager(get(), get(), get())
-    }
-    single {
-        FontManager(get())
     }
     single {
         LanguageManager(
@@ -563,39 +516,6 @@ val appModule = module {
         bind<LanguageStorage>()
         bind<ThemeSettingsStorage>()
         bind<INotificationSettingsStorage>()
-    }
-    single {
-        val definedPaths = get<DesktopDefinedPaths>()
-        PageStatesStorage(
-            kotlinxSerializationDataStore(
-                definedPaths.pageStatesStorageFile.toFile(),
-                get(),
-                PageStatesModel::default,
-            )
-        )
-    }
-    single {
-        val lifecycle = LifecycleRegistry(
-            Lifecycle.State.RESUMED
-        )
-        val context = DefaultComponentContext(lifecycle)
-        runBlocking {
-            withContext(Dispatchers.Main) {
-                AppComponent(context)
-            }
-        }
-    }.apply {
-        bind<DesktopDownloadDialogManager>()
-        bind<DesktopAddDownloadDialogManager>()
-        bind<DesktopCategoryDialogManager>()
-        bind<EditDownloadDialogManager>()
-        bind<FileChecksumDialogManager>()
-        bind<QueuePageManager>()
-        bind<NotificationSender>()
-        bind<DownloadItemOpener>()
-        bind<PerHostSettingsPageManager>()
-        bind<PowerActionManager>()
-        bind<SettingsPageManager>()
     }
     single {
         RemovedDownloadsFromDiskTracker(
@@ -673,13 +593,6 @@ val appModule = module {
             .dns(appDns)
             .build()
     }
-    single {
-        KeepAwakeManager(
-            platformKeepAwake(),
-            get(),
-            get(),
-        )
-    }
     single<IPerHostSettingsStorage> {
         val definedPaths = get<DefinedPaths>()
         PerHostSettingsDatastoreStorage(
@@ -704,32 +617,18 @@ val appModule = module {
             get(),
         )
     }
-    single<ISelectQueueStorage> {
-        val definedPaths = get<DesktopDefinedPaths>()
-        SelectQueueStorage(
-            kotlinxSerializationDataStore<SelectQueueSettings>(
-                definedPaths.selectQueueSettingsFile.toFile(),
-                get(),
-                ::SelectQueueSettings,
-            )
-        )
-    }
     single {
         PerHostSettingsManager(get())
     }
-    single { NotificationManager() }
 
-    single {
-        val definedPaths = get<DesktopDefinedPaths>()
-        CustomRenderApi(definedPaths.renderApiFile)
-    }
 }
 
+val appModule = module { includes(coreModule, desktopGuiModule) }
 
 object Di : KoinComponent {
-    fun boot() {
+    fun boot(entryType: EntryType = EntryType.GUI) {
         startKoin {
-            modules(appModule)
+            modules(if (entryType == EntryType.GUI) appModule else headlessModule)
         }
     }
 }

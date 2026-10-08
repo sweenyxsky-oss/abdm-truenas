@@ -33,7 +33,7 @@ object HeadlessApp : KoinComponent {
                 entryType = EntryType.CLI,
             )
 
-            Di.boot()
+            Di.boot(entryType = EntryType.CLI)
 
             // Load persisted application settings and start the real downloader.
             appRepository.boot()
