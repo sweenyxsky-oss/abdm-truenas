@@ -2,7 +2,7 @@ name: Build TrueNAS image
 
 on:
   push:
-    branches: ["truenas-web", "v0.3-exact-windows-gui", "v0.4-browser-multiconnection"]
+    branches: ["truenas-web", "v0.3-exact-windows-gui", "v0.4-browser-multiconnection", "v4-chrome-based", "v05-firefox-based"]
     tags: ["v*"]
   workflow_dispatch:
 
