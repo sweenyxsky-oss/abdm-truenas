@@ -1,9 +1,6 @@
-import buildlogic.CiUtils
-import buildlogic.versioning.getAppVersionString
 import io.github.z4kn4fein.semver.toVersion
 import io.github.z4kn4fein.semver.toVersionOrNull
 import ir.amirab.git_version.core.semanticVersionRegex
-import org.jetbrains.changelog.Changelog
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
 
 plugins {
@@ -12,7 +9,6 @@ plugins {
      * retrieve latest versions of dependencies
      */
     com.github.`ben-manes`.versions
-    id(Plugins.changeLog)
 }
 
 val defaultSemVersion = "1.0.0"
@@ -43,39 +39,6 @@ tasks.dependencyUpdates {
     }
 }
 
-// ======= begin of GitHub action stuff
-
-val ciDir = CiUtils.getCiDir(project)
-changelog {
-    path.set(rootProject.layout.projectDirectory.dir("CHANGELOG.md").asFile.path)
-    version.set(getAppVersionString())
-}
-val createChangeNoteForCi = tasks.register("createChangeNoteForCi") {
-    inputs.property("appVersion", getAppVersionString())
-    inputs.file(changelog.path)
-    outputs.file(ciDir.changeNotesFile)
-    doLast {
-        val output = ciDir.changeNotesFile.get().asFile
-        val bodyText = with(changelog) {
-            getOrNull(getAppVersionString())?.let { item ->
-                renderItem(item, Changelog.OutputType.MARKDOWN)
-            }
-        }.orEmpty()
-        logger.lifecycle("changeNotes written in $output")
-        output.writeText(bodyText)
-    }
-}
-
-val createReleaseFolderForCi = tasks.register("createReleaseFolderForCi") {
-    val createBinariesForCi = CiUtils.getCreateBinaryFolderForCiTaskName()
-    dependsOn("desktop:app:$createBinariesForCi")
-    val shouldGenerateChangelog = true
-    if (shouldGenerateChangelog) {
-        dependsOn(createChangeNoteForCi)
-    }
-}
-
-// ======= end of GitHub action stuff
 
 // The upstream project currently contains a large set of legacy Kotlin compiler warnings.
 // Keep CI output clean while retaining Gradle failures for actual compilation errors.

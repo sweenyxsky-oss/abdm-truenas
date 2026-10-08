@@ -6,4 +6,3 @@ dependencyResolutionManagement{
     }
 }
 include("git-version-plugin")
-include("installer-plugin")

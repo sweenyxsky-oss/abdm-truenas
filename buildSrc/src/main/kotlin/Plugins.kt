@@ -21,7 +21,6 @@ object Plugins {
     const val kotlinRpc = "org.jetbrains.kotlinx.rpc.plugin"
     const val compose = "org.jetbrains.compose"
     const val composeCompiler = "org.jetbrains.kotlin.plugin.compose"
-    const val changeLog = "org.jetbrains.changelog"
     const val buildConfig = "com.github.gmazzo.buildconfig"
     const val aboutLibraries = "com.mikepenz.aboutlibraries.plugin"
 

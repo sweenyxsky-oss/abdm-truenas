@@ -1,4 +1,3 @@
-import buildlogic.CiUtils
 import buildlogic.versioning.*
 import com.mikepenz.aboutlibraries.plugin.DuplicateMode
 import com.mikepenz.aboutlibraries.plugin.DuplicateRule
@@ -16,7 +15,6 @@ plugins {
     id(Plugins.ksp)
     id(Plugins.aboutLibraries)
     id(Plugins.kotlinRpc)
-    id("ir.amirab.installer-plugin")
 //    id(MyPlugins.proguardDesktop)
 }
 
@@ -103,8 +101,6 @@ tasks.processResources {
     }
 }
 
-val cliBinaryName = "${getAppName()}Cli"
-val nativeMessagingHostBinaryName = "${getAppName()}NativeMessagingHost"
 
 val desktopPackageName = "com.abdownloadmanager.desktop"
 nucleus {
@@ -125,24 +121,10 @@ nucleus {
         // Define the main class for the application.
         mainClass = "$desktopPackageName.AppKt"
         additionalLaunchers {
-            create(cliBinaryName) {
-                mainClass = "$desktopPackageName.cli.CliAppKt"
-                winConsole = true
-                jvmArgs(*defaultJvmArgs())
-            }
             create("ABDMHeadless") {
                 mainClass = "com.abdownloadmanager.desktop.headless.HeadlessApp"
                 winConsole = true
                 jvmArgs(*defaultJvmArgs())
-            }
-            create(nativeMessagingHostBinaryName) {
-                mainClass = "$desktopPackageName.nativemessaging.host.NativeMessagingHostKt"
-                winConsole = true
-                jvmArgs(
-                    *defaultJvmArgs(),
-                    // we don't want to write anything other than browser's stdio!
-                    "-Xlog:disable"
-                )
             }
         }
         nativeDistributions {
@@ -171,65 +153,7 @@ nucleus {
                 menuGroup = menuGroupName
                 shortcut = true
             }
-            macOS {
-                iconFile = project.file("icons/icon.icns")
-                infoPlist {
-                    extraKeysRawXml = """
-                            <key>LSUIElement</key>
-                            <string>true</string>
-                        """.trimIndent()
-                }
-                if (Platform.isMac()) {
-                    jvmArgs("-Dapple.awt.enableTemplateImages=true")
-                }
-            }
-            windows {
-                upgradeUuid = providers.gradleProperty("INSTALLER.WINDOWS.UPGRADE_UUID").orNull
-                iconFile = project.file("icons/icon.ico")
-                console = false
-                dirChooser = true
-                shortcut = true
-                menuGroup = menuGroupName
-                menu = true
-            }
         }
-    }
-}
-
-installerPlugin {
-    dependsOn("createReleaseDistributable")
-    outputFolder.set(layout.buildDirectory.dir("custom-installer"))
-    windows {
-        appName = getAppName()
-        appDisplayName = getPrettifiedAppName()
-        appVersion = getAppVersionStringForPackaging(TargetFormat.Exe)
-        appDisplayVersion = getAppVersionString()
-        appDataDirName = getAppDataDirName()
-        inputDir = project.file("build/compose/binaries/main-release/app/${getAppName()}")
-        outputFileName = getAppName()
-        licenceFile = rootProject.file("LICENSE")
-        iconFile = project.file("icons/icon.ico")
-        nsisTemplate = project.file("resources/installer/nsis-script-template.nsi")
-        extraParams = mapOf(
-            "native_messaging_host_binary_name" to nativeMessagingHostBinaryName,
-            "cli_binary_name" to cliBinaryName,
-            "app_publisher" to "abdownloadmanager.com",
-            "app_version_with_build" to "${getAppVersionStringForPackaging(TargetFormat.Exe)}.0",
-            "source_code_url" to "https://github.com/amir1376/ab-download-manager",
-            "project_website" to "www.abdownloadmanager.com",
-            "copyright" to "© 2024-present AB Download Manager App",
-            "header_image_file" to project.file("resources/installer/abdm-header-image.bmp"),
-            "sidebar_image_file" to project.file("resources/installer/abdm-sidebar-image.bmp")
-        )
-    }
-    macos {
-        appName = getAppName()
-        inputDir = project.file("build/compose/binaries/main-release/app/")
-        appFileName = "${getAppName()}.app"
-        backgroundImage = project.file("resources/installer/dmg_background.png")
-        outputFileName = getAppName()
-        licenseFile = rootProject.file("LICENSE")
-        volumeIcon = project.file("icons/icon.icns")
     }
 }
 
@@ -277,104 +201,7 @@ val postReleaseDistributable = tasks.register("postReleaseDistributable") {
     description = "Any modification need to be added to the app distributable folder, should be added here"
     dependsOnAOT()
 }
-installerPlugin.dependsOn(postReleaseDistributable)
 
-// ======= begin of GitHub action stuff
-val ciDir = CiUtils.getCiDir(project)
-
-val appPackageNameByComposePlugin
-    get() = requireNotNull(nucleus.application.nativeDistributions.packageName) {
-        "compose.desktop.application.nativeDistributions.packageName must not be null!"
-    }
-
-val distributableAppArchiveDir: Provider<Directory> =
-    project.layout.buildDirectory.dir("dist/archives")
-
-fun AbstractArchiveTask.fromAppImagePath() {
-    from(tasks.named("createReleaseDistributable"))
-    destinationDirectory.set(distributableAppArchiveDir)
-}
-
-/**
- * gradle 9 removes file permissions and timestamp by default in archive tasks!. but we want them!
- */
-fun AbstractArchiveTask.preserveFileAttributes() {
-    // Make file order based on the file system
-    isReproducibleFileOrder = false
-    // Use file timestamps from the file system
-    isPreserveFileTimestamps = true
-    // Use permissions from the file system
-    useFileSystemPermissions()
-}
-
-val createDistributableAppArchiveTar = tasks.register("createDistributableAppArchiveTar", Tar::class) {
-    dependsOn(postReleaseDistributable)
-    preserveFileAttributes()
-    archiveFileName.set("app.tar.gz")
-    compression = Compression.GZIP
-    fromAppImagePath()
-}
-val createDistributableAppArchiveZip = tasks.register("createDistributableAppArchiveZip", Zip::class) {
-    dependsOn(postReleaseDistributable)
-    preserveFileAttributes()
-    archiveFileName.set("app.zip")
-    fromAppImagePath()
-}
-val createDistributableAppArchive = tasks.register("createDistributableAppArchive") {
-    when (Platform.getCurrentPlatform()) {
-        Platform.Desktop.Linux,
-        Platform.Desktop.MacOS -> dependsOn(createDistributableAppArchiveTar)
-
-        Platform.Desktop.Windows -> dependsOn(createDistributableAppArchiveZip)
-        Platform.Android -> error("this task is used for desktop only")
-    }
-}
-
-tasks.register(CiUtils.getCreateBinaryFolderForCiTaskName()) {
-    if (installerPlugin.isThisPlatformSupported()) {
-        dependsOn(installerPlugin.createInstallerTask)
-        inputs.dir(installerPlugin.outputFolder)
-    }
-    dependsOn(createDistributableAppArchive)
-    inputs.property("appVersion", getAppVersionString())
-    inputs.dir(distributableAppArchiveDir)
-    outputs.dir(ciDir.binariesDir)
-    doLast {
-        val output = ciDir.binariesDir.get().asFile
-        val packageName = appPackageNameByComposePlugin
-
-        if (installerPlugin.isThisPlatformSupported()) {
-            val targets = installerPlugin.getCreatedInstallerTargetFormats()
-            for (target in targets) {
-                CiUtils.movePackagedAndCreateSignature(
-                    appVersion = getAppVersion(),
-                    packageName = packageName,
-                    target = target,
-                    basePackagedAppsDir = installerPlugin.outputFolder.get().asFile,
-                    outputDir = output,
-                )
-            }
-            logger.lifecycle("app packages for '${targets.joinToString(", ") { it.name }}' written in $output using the installer plugin")
-        }
-        val appArchiveDistributableDir = distributableAppArchiveDir.get().asFile
-        CiUtils.copyAndHashToDestination(
-            distributableAppArchiveDir.get().asFile.resolve(
-                CiUtils.getFileOfDistributedArchivedTarget(
-                    appArchiveDistributableDir,
-                )
-            ),
-            output,
-            CiUtils.getTargetFileName(
-                packageName,
-                getAppVersion(),
-                null, // this is not an installer (it will be automatically converted to current os name
-                Arch.getCurrentArch().name
-            )
-        )
-        logger.lifecycle("distributable app archive written in ${output}")
-    }
-}
-// ======= end of GitHub action stuff
 
 // Headless TrueNAS runtime. This uses the same downloader core as the desktop app.
 tasks.register<JavaExec>("runHeadless") {

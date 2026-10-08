@@ -15,7 +15,6 @@ koinAnnotation = "4.2.2"
 decompose = "3.5.0"
 essenty = "2.6.0"
 buildConfig = "6.1.2"
-changelog = "2.5.0"
 arrow = "2.2.3"
 datastore = "1.2.1"
 aboutLibraries = "15.2.0"
@@ -101,7 +100,6 @@ pluginComposeMultiplatform = { module = "org.jetbrains.compose:compose-gradle-pl
 pluginComposeCompiler = { module = "org.jetbrains.kotlin:compose-compiler-gradle-plugin", version.ref = "kotlin" }
 pluginKotlin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 pluginSerialization = { module = "org.jetbrains.kotlin:kotlin-serialization", version.ref = "kotlin" }
-pluginChangeLog = { module = "org.jetbrains.intellij.plugins:gradle-changelog-plugin", version.ref = "changelog" }
 pluginBuildConfig = { module = "com.github.gmazzo.buildconfig:plugin", version.ref = "buildConfig" }
 pluginKsp = { module = "com.google.devtools.ksp:symbol-processing-gradle-plugin", version.ref = "ksp" }
 pluginAboutLibraries = { module = "com.mikepenz.aboutlibraries.plugin:aboutlibraries-plugin", version.ref = "aboutLibraries" }
@@ -147,5 +145,4 @@ compose = { id = "org.jetbrains.compose", version.ref = "compose" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 
 buildConfig = { id = "com.github.gmazzo.buildconfig", version.ref = "buildConfig" }
-changeLog = { id = "org.jetbrains.changelog", version.ref = "changelog" }
 
