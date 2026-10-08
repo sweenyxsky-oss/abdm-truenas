@@ -42,6 +42,11 @@
   <dialog id="importDialog"><form method="dialog" id="importForm"><div class="dialog-head"><div><h2>Import download list</h2><p>Select a TXT file containing one URL per line.</p></div><button class="icon-btn" value="cancel">×</button></div><div style="padding:18px 20px"><input id="importFile" type="file" accept=".txt,text/plain"><div id="importPreview" style="margin-top:14px;max-height:45vh;overflow:auto"></div></div><div class="dialog-actions"><button class="secondary" value="cancel">Cancel</button><button class="primary" value="default">Start selected</button></div></form></dialog>
   <script src="js/api.js"></script>
   <script src="js/app.js"></script>
+  <script>
+  // Firefox build: relabel the browser page without modifying app.js.
+  titles.browser = ["Browser", "Firefox browser session"];
+  renderBrowser = new Function("return " + renderBrowser.toString().replace(/Chromium/g, "Firefox"))();
+  </script>
   <script>document.getElementById("menuBtn").onclick=()=>document.querySelector(".sidebar").classList.toggle("open");document.getElementById("nav").addEventListener("click",()=>document.querySelector(".sidebar").classList.remove("open"));</script>
 </body>
 </html>
