@@ -26,6 +26,7 @@ import ir.amirab.downloader.monitor.CompletedDownloadItemState
 import ir.amirab.downloader.monitor.ProcessingDownloadItemState
 import ir.amirab.downloader.part.PartDownloadStatus
 import ir.amirab.downloader.queue.QueueManager
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalTime
 import java.net.URLDecoder
@@ -395,11 +396,25 @@ class IntegrationHandlerImp : IntegrationHandler, KoinComponent {
         val downloaderInUi = downloaderInUiRegistry.getDownloaderOf(
             addDownloaderInUiProps.credentials
         ) ?: error("Downloader for ${addDownloaderInUiProps.credentials::class.qualifiedName} not found")
+        val explicitName = task.name?.takeIf { it.isNotBlank() }
+        // Same as the desktop "Add download" dialog: ask the server first (using the
+        // browser's cookies/referer headers), so the name comes from Content-Disposition
+        // or the final URL after redirects instead of the raw clicked link.
+        val serverName = if (explicitName != null) null else runCatching {
+            withTimeoutOrNull(30_000L) {
+                val checker = downloaderInUi.createLinkChecker(addDownloaderInUiProps.credentials)
+                checker.check()
+                val info = checker.responseInfo.value
+                if (info == null || !info.isSuccessFul || info.isWebPage) null
+                else checker.suggestedName.value?.takeIf { it.isNotBlank() }
+            }
+        }.onFailure { it.printStackTrace() }.getOrNull()
         val downloadItem = downloaderInUi.createBareDownloadItem(
             addDownloaderInUiProps.credentials,
             basicDownloadItem = BasicDownloadItem(
                 folder = task.folder?.takeIf { it.isNotBlank() } ?: appSettings.saveLocation.value,
-                name = task.name?.takeIf { it.isNotBlank() }
+                name = explicitName
+                    ?: serverName
                     ?: addDownloaderInUiProps.extraConfig.suggestedName?.takeIf { it.isNotBlank() }
                     ?: suggestedFileName(task.downloadSource.link),
             ),
