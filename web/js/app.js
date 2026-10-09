@@ -1,54 +1,32 @@
-const state={view:"dashboard",page:1,pageSize:10,downloads:[],allDownloads:[],queues:[],connected:false,query:"",browserPath:"",browserItems:[],categories:[],settings:null,lastReconnectAttempt:0,selectedIds:new Set(),importItems:[],detailsPollTimer:null,browserSession:null};
+const state={view:"dashboard",statusFilter:"all",categoryFilter:null,queueFilter:null,expandedStatus:"all",sortKey:"dateAdded",sortDirection:-1,page:1,pageSize:10,downloads:[],allDownloads:[],queues:[],connected:false,query:"",browserPath:"",browserItems:[],categories:[],settings:null,lastReconnectAttempt:0,selectedIds:new Set(),importItems:[],detailsPollTimer:null,browserSession:null};
 state.downloads=[];
 
-const titles={dashboard:["Dashboard","Download manager overview"],downloads:["Downloads","All download tasks"],queue:["Queue","Manage download queues"],browser:["Browser","Chromium browser session"],categories:["Categories","Organize downloads"],scheduler:["Scheduler","Scheduled download rules"],settings:["Settings","ABDM service configuration"]};
+const titles={dashboard:["Downloads",""],downloads:["Downloads","All download tasks"],queue:["Queue","Manage download queues"],browser:["Browser","Firefox browser session"],categories:["Categories","Organize downloads"],scheduler:["Scheduler","Scheduled download rules"],settings:["Settings","ABDM service configuration"]};
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function jsAttrArg(s){return esc(JSON.stringify(String(s)))}
 function paginate(items){const pages=Math.max(1,Math.ceil(items.length/state.pageSize));if(state.page>pages)state.page=pages;const start=(state.page-1)*state.pageSize;return {items:items.slice(start,start+state.pageSize),pages,start}}
 function pagination(total,pages){if(state.page>pages)state.page=pages;return `<div class="pagination"><span>Showing ${total?((state.page-1)*state.pageSize+1):0}–${Math.min(state.page*state.pageSize,total)} of ${total}</span><div class="pages">${Array.from({length:pages},(_,i)=>`<button class="${i+1===state.page?"active":""}" onclick="setPage(${i+1})">${i+1}</button>`).join("")}</div><label style="display:flex;align-items:center;gap:7px">Per page<select class="page-size" onchange="setSize(this.value)"><option value="10" ${state.pageSize===10?"selected":""}>10</option><option value="25" ${state.pageSize===25?"selected":""}>25</option><option value="50" ${state.pageSize===50?"selected":""}>50</option></select></label></div>`}
-function actionButtons(x){
-  const id=Number(x.id);
-  const pauseResume=x.status==="Downloading"||x.status==="Preparing"||x.status==="Retrying"
-    ?`<button class="icon-btn" title="Pause" onclick="downloadAction(${id},'pause')">⏸</button>`
-    :x.status==="Paused"||x.status==="Queued"
-      ?`<button class="icon-btn" title="Resume" onclick="downloadAction(${id},'resume')">▶</button>`
-      :"";
-  const retry=x.status==="Completed"?"" : `<button class="icon-btn" title="Retry" onclick="downloadAction(${id},'retry')">↻</button>`;
-  return `<span class="actions">${pauseResume}${retry}<button class="icon-btn" title="Move to queue" onclick="moveDownloadToQueue(${id})">☷</button><button class="icon-btn danger" title="Remove download" onclick="downloadAction(${id},'remove',false)">✕</button></span>`;
+function fileIcon(name){const ext=name.split(".").pop().toLowerCase();return /zip|rar|7z|gz|iso/.test(ext)?"FileZip":/mp3|flac|wav|aac/.test(ext)?"FileMusic":/mp4|mkv|avi|webm/.test(ext)?"FileVideo":/pdf|docx?|txt|epub/.test(ext)?"FileDocument":/png|jpg|jpeg|webp/.test(ext)?"FilePicture":"File"}
+function visibleDownloads(){
+  let items=state.allDownloads.filter(x=>(!state.query||x.name.toLowerCase().includes(state.query))&&(state.statusFilter==="all"||(state.statusFilter==="finished"?x.status==="Completed":x.status!=="Completed"))&&(state.categoryFilter===null||Number(x.raw?.categoryId)===Number(state.categoryFilter))&&(state.queueFilter===null||Number(x.queueId)===Number(state.queueFilter)));
+  return items.slice().sort((a,b)=>{let av=state.sortKey==="name"?a.name:state.sortKey==="status"?a.status:a.raw?.[state.sortKey]??0;let bv=state.sortKey==="name"?b.name:state.sortKey==="status"?b.status:b.raw?.[state.sortKey]??0;return (typeof av==="string"?av.localeCompare(String(bv)):Number(av)-Number(bv))*state.sortDirection});
 }
-function table(items){const ids=items.map(x=>Number(x.id));const allChecked=ids.length>0&&ids.every(id=>state.selectedIds.has(id));return `<div class="card table-wrap" data-scroll-key="download-table"><table class="table download-table"><thead><tr><th class="select-col"><input type="checkbox" aria-label="Select all" ${allChecked?"checked":""} onchange="togglePageSelection(this.checked)"></th><th>NAME</th><th>SIZE</th><th>PROGRESS</th><th>SPEED</th><th>ETA</th><th>QUEUE</th><th>STATUS</th><th></th></tr></thead><tbody>${items.map(x=>`<tr><td class="select-col"><input type="checkbox" aria-label="Select ${esc(x.name)}" ${state.selectedIds.has(Number(x.id))?"checked":""} onchange="toggleSelected(${x.id},this.checked);event.stopPropagation()"></td><td class="name clickable" title="${esc(x.name)}" onclick="showDownload(${x.id})">${esc(x.name)}</td><td>${x.size}</td><td><div style="display:flex;align-items:center;gap:9px"><div class="progress"><i style="width:${x.progress}%"></i></div><span>${x.progress}%</span></div></td><td>${x.speed}</td><td>${x.eta}</td><td>${esc(x.queueName||"No queue")}</td><td><span class="tag">${esc(x.status)}</span></td><td>${actionButtons(x)}</td></tr>`).join("")}</tbody></table></div>`}
-function selectionToolbar(){const count=state.selectedIds.size;if(!count)return "";return `<div class="selection-toolbar"><strong>${count} selected</strong><button class="secondary" onclick="selectedAction('pause')">Pause</button><button class="secondary" onclick="selectedAction('resume')">Start</button><button class="secondary" onclick="selectedAction('remove')">Cancel / Remove</button><button class="secondary danger-action" onclick="selectedAction('remove',true)">Delete files</button><button class="icon-btn" title="Clear selection" onclick="clearSelection()">×</button></div>`}
+window.setFilter=function(status,category=null,queue=null){state.statusFilter=status;state.categoryFilter=category;state.queueFilter=queue;state.expandedStatus=status;state.page=1;state.selectedIds.clear();render()};
+window.sortDownloads=function(key){state.sortDirection=state.sortKey===key?-state.sortDirection:1;state.sortKey=key;render()};
+function dateCell(value){return value?esc(new Date(value).toLocaleDateString()):"—"}
+function table(items){
+ const ids=items.map(x=>Number(x.id));const allChecked=ids.length>0&&ids.every(id=>state.selectedIds.has(id));
+ const cols=[["name","Name"],["size","Size"],["status","Status"],["speed","Speed"],["eta","Time Left"],["dateAdded","Date Added"]];
+ return `<div class="table-wrap" data-scroll-key="download-table"><table class="table download-table"><thead><tr><th class="select-col"><input type="checkbox" aria-label="Select all" ${allChecked?"checked":""} onchange="togglePageSelection(this.checked)"></th>${cols.map(([key,label])=>`<th class="col-${key}"><button onclick="sortDownloads('${key}')">${label}${state.sortKey===key?'<span class="sort-arrow">'+(state.sortDirection===1?'▴':'▾')+'</span>':''}</button></th>`).join("")}</tr></thead><tbody>${items.map(x=>`<tr class="${state.selectedIds.has(Number(x.id))?'selected':''}" tabindex="0" aria-label="${esc(x.name)}" ondblclick="showDownload(${x.id})" onkeydown="if(event.key==='Enter')showDownload(${x.id})" oncontextmenu="event.preventDefault();openDownloadMenu(event,${x.id})"><td class="select-col"><input type="checkbox" aria-label="Select ${esc(x.name)}" ${state.selectedIds.has(Number(x.id))?"checked":""} onchange="toggleSelected(${x.id},this.checked)"></td><td class="name"><button class="file-name" title="${esc(x.name)}" onclick="showDownload(${x.id})">${icon(fileIcon(x.name))}<span>${esc(x.name)}</span></button></td><td>${x.size}</td><td><div class="status-cell ${x.status==='Completed'?'finished':x.status==='Error'?'error':''}"><span>${esc(x.status==='Completed'?'Finished':x.status)}${x.status==='Downloading'?' · '+x.progress+'%':''}</span><div class="progress"><i style="width:${Math.min(100,Math.max(0,Number(x.progress)||0))}%"></i></div></div></td><td>${x.speed}</td><td>${x.eta}</td><td>${dateCell(x.raw?.dateAdded)}</td></tr>`).join("")}</tbody></table>${items.length?'':'<div class="abdm-empty">List is empty</div>'}</div>`;
+}
+function selectionToolbar(){return ""}
+function filterButton(status,label,ico){const chosen=state.statusFilter===status&&state.categoryFilter===null&&state.queueFilter===null;return `<button class="home-filter ${chosen?'active':''}" aria-label="${label}" onclick="setFilter('${status}')"><span class="chevron">${state.expandedStatus===status?'⌄':'›'}</span>${icon(ico)}<span>${label}</span></button>`}
 function renderDashboard(){
-  const dp=paginate(state.allDownloads);
-  const categories=state.categories||[];
-  const queues=state.queues||[];
-  const active=state.allDownloads.filter(x=>["Downloading","Preparing","Retrying"].includes(x.status)).length;
-  const speed=state.allDownloads.reduce((n,x)=>n+Number(x.raw?.speed||0),0);
-  const categoryItems=cat=>state.allDownloads.filter(x=>Number(x.raw?.categoryId??x.categoryId)===Number(cat.id)).length;
-  return '<div class="abdm-home">'+
-    '<aside class="home-sidebar" aria-label="Download categories and queues" tabindex="0" data-scroll-key="home-filters">'+
-      '<div class="home-sidebar-title">Categories</div>'+
-      '<button class="home-filter active"><span class="home-filter-icon">◉</span><span>All downloads</span><b>'+state.allDownloads.length+'</b></button>'+
-      '<button class="home-filter"><span class="home-filter-icon">↓</span><span>Downloading</span><b>'+active+'</b></button>'+
-      '<button class="home-filter"><span class="home-filter-icon">✓</span><span>Completed</span><b>'+state.allDownloads.filter(x=>x.status==="Completed").length+'</b></button>'+
-      '<button class="home-filter"><span class="home-filter-icon">!</span><span>Error</span><b>'+state.allDownloads.filter(x=>x.status==="Error").length+'</b></button>'+
-      '<div class="home-divider"></div>'+
-      categories.map(cat=>'<button class="home-filter"><span class="home-filter-icon">▱</span><span>'+esc(cat.name)+'</span><b>'+categoryItems(cat)+'</b></button>').join('')+
-      '<div class="home-sidebar-title queue-title">Queues</div>'+
-      queues.map(q=>'<button class="home-filter"><span class="home-filter-icon">☷</span><span>'+esc(q.name)+'</span><b>'+(q.queued||0)+'</b></button>').join('')+
-    '</aside>'+
-    '<section class="home-content">'+
-      '<div class="home-toolbar"><div class="home-toolbar-left">'+
-        '<button class="home-add" onclick="document.getElementById(\'addBtn\').click()">＋ <span>Add URL</span></button>'+
-        '<button class="home-tool" title="Start selected" onclick="selectedAction(\'resume\')">▶</button>'+
-        '<button class="home-tool" title="Pause selected" onclick="selectedAction(\'pause\')">Ⅱ</button>'+
-        '<button class="home-tool" title="Remove selected" onclick="selectedAction(\'remove\')">×</button>'+
-      '</div><div class="home-search"><span>⌕</span><input id="homeSearch" placeholder="Search downloads" value="'+esc(state.query)+'" oninput="filterDownloads(this.value)"></div></div>'+
-      selectionToolbar()+
-      '<div class="home-table-wrap">'+table(dp.items)+'</div>'+
-      (state.allDownloads.length?pagination(state.allDownloads.length,dp.pages):'<div class="abdm-empty"><div class="abdm-empty-icon">↓</div><strong>No downloads</strong><span>Add a URL to start downloading.</span></div>')+
-      '<div class="home-footer"><span>Downloads: <b>'+state.allDownloads.length+'</b></span><span>Active: <b>'+active+'</b></span><span class="footer-spacer"></span><span>Speed: <b>'+formatSpeed(speed)+'</b></span></div>'+
-    '</section></div>';
+ const items=visibleDownloads(),dp=paginate(items),active=state.allDownloads.filter(x=>["Downloading","Preparing","Retrying"].includes(x.status)).length,speed=state.allDownloads.reduce((n,x)=>n+Number(x.raw?.speed||0),0);
+ const statuses=[["all","All","Folder"],["finished","Finished","FolderFinished"],["unfinished","Unfinished","FolderUnfinished"]];
+ const filters=statuses.map(([key,label,ico])=>filterButton(key,label,ico)+(state.expandedStatus===key?state.categories.map(c=>`<button class="home-filter category-filter ${state.categoryFilter===c.id?'active':''}" onclick="setFilter('${key}',${Number(c.id)})">${icon(fileIcon('file.'+(c.acceptedFileTypes?.[0]||'')))}<span>${esc(c.name)}</span></button>`).join(""):"")).join("");
+ const tool=(label,ico,action,disabled=false)=>`<button class="home-tool" title="${label}" aria-label="${label}" onclick="${action}" ${disabled?'disabled':''}>${icon(ico)}</button>`;
+ return `<div class="abdm-home"><aside class="home-sidebar" aria-label="Download categories and queues" tabindex="0" data-scroll-key="home-filters"><div class="filter-group">${filters}</div><div class="queue-sidebar"><div class="home-sidebar-title"><span>Queues</span><button class="tiny-tool" title="New queue" aria-label="New queue" onclick="createQueue()">${icon('Plus')}</button></div>${state.queues.map(q=>`<button class="home-filter ${Number(state.queueFilter)===Number(q.id)&&state.queueFilter!==null?'active':''}" onclick="setFilter('all',null,${Number(q.id)})">${icon('Queue')}<span>${esc(q.name)}</span>${q.running?'<i class="queue-running"></i>':''}</button>`).join("")}</div></aside><div class="pane-divider"></div><section class="home-content"><div class="home-toolbar"><button class="home-add" onclick="document.getElementById('addBtn').click()">${icon('AddLink')}<span>Add URL</span></button><span class="tool-divider"></span>${tool('Resume','Resume',"selectedAction('resume')",!state.selectedIds.size)}${tool('Pause','Pause',"selectedAction('pause')",!state.selectedIds.size)}<span class="tool-divider"></span>${tool('Start queues','QueueStart',"controlAllQueues('start')")}${tool('Stop queues','QueueStop',"controlAllQueues('stop')")}${tool('Queues','Queue',"navigateTo('queue')")}<span class="tool-divider"></span>${tool('Stop all','Stop',"bulkAction('pause')")}${tool('Delete','Delete',"selectedAction('remove')",!state.selectedIds.size)}<span class="tool-divider"></span>${tool('Settings','Settings',"navigateTo('settings')")}</div><div class="home-table-wrap">${table(dp.items)}</div>${items.length>state.pageSize?pagination(items.length,dp.pages):''}<div class="home-footer"><span>${icon('Check')} ${state.selectedIds.size} / ${items.length}</span><span>${icon('File')} ${formatBytes(items.filter(x=>state.selectedIds.has(Number(x.id))).reduce((n,x)=>n+Math.max(0,Number(x.raw?.size)||0),0))}</span><span class="footer-spacer"></span><span>${icon('Resume')} ${active}</span><span>${icon('DownSpeed')} ${formatSpeed(speed)}</span></div></section></div>`;
 }
 function renderDownloads(){
   const p=paginate(state.downloads);
@@ -86,14 +64,14 @@ function renderBrowser(){
   const session=state.browserSession;
   if(!session?.enabled||!session?.ready){
     scheduleBrowserRetry();
-    return '<div class="card empty"><strong>Browser is starting</strong><span>Waiting for the Chromium session… this page will open it automatically.</span></div>';
+    return '<div class="card empty"><strong>Browser is starting</strong><span>Firefox</span></div>';
   }
   // noVNC 1.3 ignores a separate "token" parameter, so the token must be part of the WebSocket path.
   const wsPath=encodeURIComponent("browser/websockify?token="+(session.token||""));
   const url=window.location.origin+"/browser/novnc/vnc.html?autoconnect=true&reconnect=true&reconnect_delay=2000&resize=scale&show_dot=true&path="+wsPath;
   return '<div class="browser-shell">'+
-    '<div class="browser-head"><div><strong>Chromium</strong><span>Real Chromium session · downloads are captured by ABDM</span></div><div class="actions"><button class="secondary" onclick="reloadBrowser()">Reconnect</button><button class="secondary" onclick="restartChromium()">Restart Chromium</button></div></div>'+
-    '<div class="browser-frame-wrap"><iframe class="browser-frame" src="'+esc(url)+'" title="Chromium browser" allow="clipboard-read; clipboard-write"></iframe></div>'+
+    '<div class="browser-head"><div><strong>Firefox</strong><span></span></div><div class="actions"><button class="secondary" onclick="reloadBrowser()">Reconnect</button><button class="secondary" data-browser-restart onclick="restartChromium()">Restart Firefox</button></div></div>'+
+    '<div class="browser-frame-wrap"><iframe class="browser-frame" src="'+esc(url)+'" title="Firefox browser" allow="clipboard-read; clipboard-write"></iframe></div>'+
     '</div>';
 }
 let browserRetryTimer=null;
@@ -119,7 +97,7 @@ function renderSettings(){
   const s=state.settings||{};
   return `<div class="settings-grid">
     <div class="card">
-      <div class="section-head"><div><h3>Downloads</h3><p>Core download behavior and storage.</p></div></div>
+      <div class="section-head"><div><h3>Downloads</h3></div></div>
       <div class="form-grid settings-form">
         <label>Download folder<input id="set-folder" value="${esc(s.downloadFolder||"/downloads")}"></label>
         <label>Maximum concurrent downloads<input id="set-concurrent" type="number" min="1" max="128" value="${s.maxConcurrentDownloads||4}"></label>
@@ -138,7 +116,7 @@ function renderSettings(){
       </div>
     </div>
     <div class="card">
-      <div class="section-head"><div><h3>Web API</h3><p>Network access for the TrueNAS web interface.</p></div></div>
+      <div class="section-head"><div><h3>Web API</h3></div></div>
       <div class="form-grid settings-form">
         <label>API port<input id="set-port" type="number" min="1" max="65535" value="${s.apiPort||15151}"></label>
         <label>API key<input id="set-key" type="password" autocomplete="new-password" placeholder="Leave blank to keep current key"></label>
@@ -238,14 +216,14 @@ window.saveQueueSchedule=async function(id){
 };
 
 function renderSimple(name,text){return `<div class="card empty"><strong>${name}</strong>${text}</div>`}
-window.createCategory=async function(){const name=prompt("Category name","New Category");if(!name)return;const usePath=confirm("Use a dedicated download path for this category?");const path=usePath?prompt("Download path","/downloads/"+name.replace(/\s+/g,"_")):"";if(usePath&&path===null)return;const fileTypes=(prompt("Accepted file types (comma separated, e.g. zip,7z,iso)","")||"").split(",").map(x=>x.trim()).filter(Boolean);const urlPatterns=(prompt("Accepted URL patterns (comma separated)","")||"").split(",").map(x=>x.trim()).filter(Boolean);try{await ABDM_API.createCategory({name,path,usePath,fileTypes,urlPatterns});await loadCategories(false)}catch(e){alert("Category creation failed: "+e.message)}};
-window.renameCategory=async function(id){const x=state.categories.find(c=>Number(c.id)===Number(id));if(!x)return;const n=prompt("Category name",x.name);if(!n||n===x.name)return;try{await ABDM_API.renameCategory(id,n);await loadCategories(false)}catch(e){alert("Rename failed: "+e.message)}};
-window.deleteCategory=async function(id){const x=state.categories.find(c=>Number(c.id)===Number(id));if(!x)return;if(!confirm("Delete category '"+x.name+"'?"))return;try{await ABDM_API.deleteCategory(id);await loadCategories(false)}catch(e){alert("Delete failed: "+e.message)}};
+window.createCategory=async function(){const name=await guiPrompt("Category name","New Category");if(!name)return;const usePath=await guiConfirm("Use a dedicated download path for this category?");const path=usePath?await guiPrompt("Download path","/downloads/"+name.replace(/\s+/g,"_")):"";if(usePath&&path===null)return;const fileTypes=(await guiPrompt("Accepted file types (comma separated, e.g. zip,7z,iso)","")||"").split(",").map(x=>x.trim()).filter(Boolean);const urlPatterns=(await guiPrompt("Accepted URL patterns (comma separated)","")||"").split(",").map(x=>x.trim()).filter(Boolean);try{await ABDM_API.createCategory({name,path,usePath,fileTypes,urlPatterns});await loadCategories(false)}catch(e){alert("Category creation failed: "+e.message)}};
+window.renameCategory=async function(id){const x=state.categories.find(c=>Number(c.id)===Number(id));if(!x)return;const n=await guiPrompt("Category name",x.name);if(!n||n===x.name)return;try{await ABDM_API.renameCategory(id,n);await loadCategories(false)}catch(e){alert("Rename failed: "+e.message)}};
+window.deleteCategory=async function(id){const x=state.categories.find(c=>Number(c.id)===Number(id));if(!x)return;if(!await guiConfirm("Delete category '"+x.name+"'?"))return;try{await ABDM_API.deleteCategory(id);await loadCategories(false)}catch(e){alert("Delete failed: "+e.message)}};
 async function loadCategories(quiet=true){if(!state.connected)return;try{const items=await ABDM_API.categories();state.categories=Array.isArray(items)?items:[];state.page=Math.min(state.page,Math.max(1,Math.ceil(state.categories.length/state.pageSize)));refreshCategorySelect();if(state.view==="categories"&&!quiet)render()}catch(e){console.warn("Unable to load categories",e)}}
 
 window.browseTo=async function(path){try{const data=await ABDM_API.browser(path);state.browserPath=data.path||"";state.browserItems=Array.isArray(data.items)?data.items:[];state.page=1;render()}catch(e){alert("Browser error: "+e.message)}};
 window.browseParent=async function(){const p=state.browserPath.split("/").filter(Boolean);p.pop();await browseTo(p.join("/"))};
-function render(){const pageScroll=window.scrollY;const scrollState={};document.querySelectorAll("[data-scroll-key]").forEach(el=>scrollState[el.dataset.scrollKey]={top:el.scrollTop,left:el.scrollLeft});document.getElementById("page-title").textContent=titles[state.view][0];document.getElementById("page-subtitle").textContent=titles[state.view][1];document.querySelectorAll(".nav-item").forEach(x=>x.classList.toggle("active",x.dataset.page===state.view));let html=state.view==="dashboard"?renderDashboard():state.view==="downloads"?renderDownloads():state.view==="queue"?renderQueue():state.view==="browser"?renderBrowser():state.view==="categories"?renderCategories():state.view==="scheduler"?renderScheduler():state.view==="settings"?renderSettings():renderSimple("Page","Coming soon.");document.getElementById("app").innerHTML=html;Object.entries(scrollState).forEach(([key,pos])=>{const el=document.querySelector(`[data-scroll-key="${key}"]`);if(el){el.scrollTop=pos.top;el.scrollLeft=pos.left}});requestAnimationFrame(()=>window.scrollTo(0,pageScroll))}
+function render(){const pageScroll=window.scrollY;const scrollState={};document.querySelectorAll("[data-scroll-key]").forEach(el=>scrollState[el.dataset.scrollKey]={top:el.scrollTop,left:el.scrollLeft});document.body.dataset.view=state.view;document.getElementById("page-title").textContent=titles[state.view][0];document.getElementById("page-subtitle").textContent=titles[state.view][1];document.querySelectorAll(".nav-item").forEach(x=>x.classList.toggle("active",x.dataset.page===state.view));let html=state.view==="dashboard"?renderDashboard():state.view==="downloads"?renderDownloads():state.view==="queue"?renderQueue():state.view==="browser"?renderBrowser():state.view==="categories"?renderCategories():state.view==="scheduler"?renderScheduler():state.view==="settings"?renderSettings():renderSimple("Page","Coming soon.");document.getElementById("app").innerHTML=html;Object.entries(scrollState).forEach(([key,pos])=>{const el=document.querySelector(`[data-scroll-key="${key}"]`);if(el){el.scrollTop=pos.top;el.scrollLeft=pos.left}});requestAnimationFrame(()=>window.scrollTo(0,pageScroll))}
 window.setPage=n=>{state.page=Number(n);render()};window.setSize=n=>{state.pageSize=Number(n);state.page=1;render()};function renderDownloadParts(parts){
   if(!Array.isArray(parts)||!parts.length){
     return '<div class="parts-empty">No connection parts are currently available.</div>';
@@ -287,7 +265,7 @@ window.showDownload=function(id){
       '<div class="detail-wide"><span>Connections for this download</span><input id="detail-connections" type="number" min="1" max="128" value="'+(r.maxConnections||8)+'"></div>'+
       '<div class="detail-wide"><span>Last error</span><strong class="error-detail">'+esc(r.errorDescription||r.errorMessage||"No recorded error")+'</strong></div>'+
     '</div>'+
-    '<div class="parts-section"><div class="parts-head"><div><strong>Parts Info</strong><span>Live status and speed for each active connection</span></div></div><div id="download-parts"><div class="parts-empty">Loading connection details…</div></div></div>';
+    '<div class="parts-section"><div class="parts-head"><div><strong>Parts Info</strong></div></div><div id="download-parts"><div class="parts-empty">Loading connection details…</div></div></div>';
   document.getElementById("saveDetailsBtn").onclick=()=>saveDownloadDetails(id);
   document.getElementById("detailsDialog").showModal();
   loadDownloadParts(id);
@@ -298,23 +276,23 @@ document.getElementById("detailsDialog").addEventListener("close",()=>{
 });
 window.saveDownloadDetails=async function(id){const link=document.getElementById("detail-link")?.value.trim();const connections=Number(document.getElementById("detail-connections")?.value);if(!link){alert("Download link cannot be empty.");return}if(!Number.isInteger(connections)||connections<1||connections>128){alert("Connections must be between 1 and 128.");return}try{await ABDM_API.updateDownload(id,{link,preferredConnectionCount:connections});document.getElementById("detailsDialog").close();await loadDownloads(false)}catch(e){alert("Download update failed: "+e.message)}};
 window.downloadAction=async function(id,action,removeFile=false){
-  if(action==="remove"&&!confirm(removeFile?"Remove the download and delete its file?":"Remove this download from ABDM?"))return;
+  if(action==="remove"&&!await guiConfirm(removeFile?"Remove the download and delete its file?":"Remove this download from ABDM?"))return;
   try{await ABDM_API.control(id,action,removeFile);await loadDownloads(false)}catch(e){alert("Action failed: "+e.message)}
 };
 window.toggleSelected=function(id,checked){id=Number(id);if(checked)state.selectedIds.add(id);else state.selectedIds.delete(id);render()};
-window.togglePageSelection=function(checked){const source=state.view==="downloads"?state.downloads:state.allDownloads;source.slice((state.page-1)*state.pageSize,state.page*state.pageSize).forEach(x=>checked?state.selectedIds.add(Number(x.id)):state.selectedIds.delete(Number(x.id)));render()};
+window.togglePageSelection=function(checked){const source=state.view==="downloads"?state.downloads:visibleDownloads();source.slice((state.page-1)*state.pageSize,state.page*state.pageSize).forEach(x=>checked?state.selectedIds.add(Number(x.id)):state.selectedIds.delete(Number(x.id)));render()};
 window.clearSelection=function(){state.selectedIds.clear();render()};
-window.selectedAction=async function(action,removeFile=false){const ids=Array.from(state.selectedIds);if(!ids.length)return;if(action==="remove"&&!confirm(removeFile?"Delete the selected files and remove the downloads?":"Remove the selected downloads?"))return;try{await Promise.all(ids.map(id=>ABDM_API.control(id,action,removeFile)));state.selectedIds.clear();await loadDownloads(false)}catch(e){alert("Selected action failed: "+e.message)}};
-window.filterDownloads=q=>{state.query=(q||"").toLowerCase();state.downloads=state.query?state.allDownloads.filter(x=>x.name.toLowerCase().includes(state.query)):state.allDownloads.slice();state.page=1;render();requestAnimationFrame(()=>{const el=document.getElementById("downloadSearch");if(el){el.focus();const n=el.value.length;el.setSelectionRange(n,n)}})};
+window.selectedAction=async function(action,removeFile=false){const ids=Array.from(state.selectedIds);if(!ids.length)return;if(action==="remove"&&!await guiConfirm(removeFile?"Delete the selected files and remove the downloads?":"Remove the selected downloads?"))return;try{await Promise.all(ids.map(id=>ABDM_API.control(id,action,removeFile)));state.selectedIds.clear();await loadDownloads(false)}catch(e){alert("Selected action failed: "+e.message)}};
+window.filterDownloads=q=>{state.query=(q||"").toLowerCase();state.downloads=state.query?state.allDownloads.filter(x=>x.name.toLowerCase().includes(state.query)):state.allDownloads.slice();state.page=1;render();requestAnimationFrame(()=>{const el=document.getElementById("downloadSearch");if(el){el.focus();el.setSelectionRange(el.value.length,el.value.length)}})};
 window.bulkAction=async function(action){
   const ids=state.allDownloads.filter(x=>action==="pause"?["Downloading","Preparing","Retrying"].includes(x.status):["Paused","Queued"].includes(x.status)).map(x=>x.id);
   try{await Promise.all(ids.map(id=>ABDM_API.control(id,action)));await loadDownloads(false)}catch(e){alert("Bulk action failed: "+e.message)}
 };
-window.createQueue=async function(){const name=prompt("Queue name","New Queue");if(!name)return;try{await ABDM_API.createQueue(name);await loadQueues(false)}catch(e){alert(e.message)}};
-window.renameQueue=async function(id){const q=state.queues.find(x=>Number(x.id)===Number(id));if(!q)return;const n=prompt("Queue name",q.name);if(!n||n===q.name)return;try{await ABDM_API.renameQueue(id,n);await loadQueues(false)}catch(e){alert(e.message)}};
-window.deleteQueue=async function(id){const q=state.queues.find(x=>Number(x.id)===Number(id));if(!q||Number(id)===0)return;if(!confirm("Delete queue '"+q.name+"'? Downloads remain."))return;try{await ABDM_API.deleteQueue(id);await loadQueues(false)}catch(e){alert(e.message)}};
-window.setQueueConcurrency=async function(id,current){const n=Number(prompt("Maximum simultaneous downloads",current));if(!Number.isInteger(n)||n<1)return;try{await ABDM_API.queueConcurrency(id,n);await loadQueues(false)}catch(e){alert(e.message)}};
-window.moveDownloadToQueue=async function(id){const list=state.queues.map(q=>q.id+" = "+q.name).join("\n");const value=prompt("Enter queue ID:\n"+list,"0");if(value===null)return;const q=Number(value);if(!Number.isInteger(q)||!state.queues.some(x=>Number(x.id)===q)){alert("Invalid queue ID.");return}try{await ABDM_API.assignQueue(id,q);await loadDownloads(false);await loadQueues(false)}catch(e){alert("Queue assignment failed: "+e.message)}};
+window.createQueue=async function(){const name=await guiPrompt("Queue name","New Queue");if(!name)return;try{await ABDM_API.createQueue(name);await loadQueues(false)}catch(e){alert(e.message)}};
+window.renameQueue=async function(id){const q=state.queues.find(x=>Number(x.id)===Number(id));if(!q)return;const n=await guiPrompt("Queue name",q.name);if(!n||n===q.name)return;try{await ABDM_API.renameQueue(id,n);await loadQueues(false)}catch(e){alert(e.message)}};
+window.deleteQueue=async function(id){const q=state.queues.find(x=>Number(x.id)===Number(id));if(!q||Number(id)===0)return;if(!await guiConfirm("Delete queue '"+q.name+"'? Downloads remain."))return;try{await ABDM_API.deleteQueue(id);await loadQueues(false)}catch(e){alert(e.message)}};
+window.setQueueConcurrency=async function(id,current){const n=Number(await guiPrompt("Maximum simultaneous downloads",current));if(!Number.isInteger(n)||n<1)return;try{await ABDM_API.queueConcurrency(id,n);await loadQueues(false)}catch(e){alert(e.message)}};
+window.moveDownloadToQueue=async function(id){const list=state.queues.map(q=>q.id+" = "+q.name).join("\n");const value=await guiPrompt("Enter queue ID:\n"+list,"0");if(value===null)return;const q=Number(value);if(!Number.isInteger(q)||!state.queues.some(x=>Number(x.id)===q)){alert("Invalid queue ID.");return}try{await ABDM_API.assignQueue(id,q);await loadDownloads(false);await loadQueues(false)}catch(e){alert("Queue assignment failed: "+e.message)}};
 window.assignDownload=async function(id,queueId){try{if(queueId===null)await ABDM_API.unqueue(id);else await ABDM_API.assignQueue(id,queueId);await loadDownloads(false);await loadQueues(false)}catch(e){alert("Queue assignment failed: "+e.message)}};
 window.moveQueueItem=async function(id,direction){try{await ABDM_API.moveQueueItem(id,direction);await loadQueues(false);await loadDownloads(true)}catch(e){alert("Queue ordering failed: "+e.message)}};
 window.queueAction=async function(id,action){
@@ -328,8 +306,8 @@ async function loadQueues(quiet=true){
     const items=await ABDM_API.queues();
     state.queues=Array.isArray(items)?items:[];refreshQueueSelect();
     if(state.page>Math.max(1,Math.ceil(state.queues.length/state.pageSize)))state.page=1;
-    if(!quiet||state.view==="dashboard"||state.view==="queue"||state.view==="scheduler")render();
-  }catch(err){console.warn("Unable to load queues",err);state.connected=false;document.getElementById("connection").textContent="Backend unavailable"}
+    if(!quiet||(document.activeElement?.id!=="globalSearch"&&(state.view==="dashboard"||state.view==="queue"||state.view==="scheduler")))render();
+  }catch(err){console.warn("Unable to load queues",err);state.connected=false;document.getElementById("connection").textContent="Disconnected"}
 }
 async function loadDownloads(quiet=true){
   if(!state.connected)return;
@@ -337,9 +315,9 @@ async function loadDownloads(quiet=true){
     const items=await ABDM_API.downloads();
     state.allDownloads=(Array.isArray(items)?items:[]).map(x=>({id:x.id,name:x.name,size:formatBytes(x.size),progress:x.percent==null?0:x.percent,speed:formatSpeed(x.speed),eta:formatEta(x.eta),status:x.status,queueId:x.queueId,queueName:x.queueName,raw:x}));const liveIds=new Set(state.allDownloads.map(x=>Number(x.id)));state.selectedIds.forEach(id=>{if(!liveIds.has(Number(id)))state.selectedIds.delete(id)});
     state.downloads=state.query?state.allDownloads.filter(x=>x.name.toLowerCase().includes(state.query)):state.allDownloads.slice();
-    const editingSearch=state.view==="downloads"&&document.activeElement?.classList.contains("search");
-    if(!quiet||state.view==="dashboard"||state.view==="queue"||(state.view==="downloads"&&!editingSearch))render();
-  }catch(err){console.warn("Unable to load downloads",err);state.connected=false;document.getElementById("connection").textContent="Backend unavailable"}
+    const editingSearch=document.activeElement?.id==="globalSearch"||(state.view==="downloads"&&document.activeElement?.classList.contains("search"));
+    if(!quiet||(!editingSearch&&(state.view==="dashboard"||state.view==="queue"||state.view==="downloads")))render();
+  }catch(err){console.warn("Unable to load downloads",err);state.connected=false;document.getElementById("connection").textContent="Disconnected"}
 }
 function formatBytes(value){
   if(value==null||value<0)return "—";
@@ -364,7 +342,7 @@ document.getElementById("addForm").addEventListener("submit",async e=>{if(e.subm
 document.getElementById("importBtn").onclick=()=>document.getElementById("importDialog").showModal();
 document.getElementById("importFile").addEventListener("change",async e=>{const file=e.target.files?.[0];if(!file)return;try{state.importItems=await ABDM_API.inspectLinks(await file.text());document.getElementById("importPreview").innerHTML=state.importItems.length?state.importItems.map((x,i)=>`<label class="import-row"><input type="checkbox" class="import-check" data-index="${i}" checked><span><strong>${esc(x.name||"Unknown")}</strong><small>${esc(x.sizeText||"Size unknown")} · ${esc(x.status||"")}${x.error?" · "+esc(x.error):""}</small></span></label>`).join(""):"<div class='empty'>No valid links found.</div>"}catch(err){document.getElementById("importPreview").innerHTML=`<div class="empty">Import failed: ${esc(err.message)}</div>`}});
 document.getElementById("importForm").addEventListener("submit",async e=>{if(e.submitter?.value==="cancel")return;e.preventDefault();const selected=Array.from(document.querySelectorAll(".import-check:checked")).map(x=>state.importItems[Number(x.dataset.index)]).filter(Boolean);if(!selected.length)return;try{await ABDM_API.add({urls:selected.map(x=>x.url),names:selected.map(x=>x.name),folder:state.settings?.downloadFolder||"/downloads"});state.importItems=[];document.getElementById("importDialog").close();await loadDownloads(false)}catch(err){alert("Import failed: "+err.message)}});
-async function connect(){try{await ABDM_API.ping();state.connected=true;await loadDownloads(true);await loadQueues(true);await loadCategories(true);await loadSettings(true);await loadBrowserSession(true);document.querySelector(".status-dot").classList.add("ok");document.getElementById("connection").textContent="Backend connected"}catch(e){document.getElementById("connection").textContent="Backend unavailable"}render()}
+async function connect(){try{await ABDM_API.ping();state.connected=true;await loadDownloads(true);await loadQueues(true);await loadCategories(true);await loadSettings(true);await loadBrowserSession(true);document.querySelector(".status-dot").classList.add("ok");document.getElementById("connection").textContent="Connected"}catch(e){document.getElementById("connection").textContent="Disconnected"}render()}
 render();connect();
 setInterval(()=>{
   if(!state.connected){

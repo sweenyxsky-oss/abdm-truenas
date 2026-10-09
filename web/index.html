@@ -3,25 +3,31 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>ABDM TrueNAS</title>
-  <link rel="stylesheet" href="css/app.css?v=0.6.1">
+  <title>AB Download Manager — TrueNAS</title>
+  <meta name="description" content="AB Download Manager for TrueNAS: downloads, queues, categories, scheduling and Firefox.">
+  <meta property="og:title" content="AB Download Manager — TrueNAS">
+  <meta property="og:description" content="AB Download Manager’s desktop-style interface for your TrueNAS downloads.">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary">
+  <link rel="icon" href="assets/app-icon.png" type="image/png">
+  <link rel="stylesheet" href="css/app.css?v=1.0.0">
 </head>
 <body>
-  <aside class="sidebar">
-    <div class="brand"><div class="brand-mark">AB</div><div><strong>ABDM</strong><span>TrueNAS</span></div></div>
-    <nav id="nav">
-      <button class="nav-item active" data-page="dashboard">⌂ <span>Dashboard</span></button>
-      <button class="nav-item" data-page="downloads">⇩ <span>Downloads</span></button>
-      <button class="nav-item" data-page="queue">☷ <span>Queue</span></button>
-      <button class="nav-item" data-page="browser">◫ <span>Browser</span></button>
-      <button class="nav-item" data-page="categories">▦ <span>Categories</span></button>
-      <button class="nav-item" data-page="scheduler">◷ <span>Scheduler</span></button>
-      <button class="nav-item" data-page="settings">⚙ <span>Settings</span></button>
-    </nav>
-    <div class="sidebar-footer"><span class="status-dot"></span><span id="connection">Connecting…</span></div>
-  </aside>
   <main class="main">
-    <header class="topbar"><div class="topbar-left"><button class="menu-btn" id="menuBtn" aria-label="Menu">☰</button><div><h1 id="page-title">Dashboard</h1><p id="page-subtitle">Download manager overview</p></div></div><div class="actions"><button class="secondary" id="importBtn">⇧ Import TXT</button><button class="primary" id="addBtn">＋ Add download</button></div></header>
+    <header class="desktop-titlebar">
+      <button class="app-brand" title="Downloads" onclick="navigateTo('dashboard')"><img src="assets/app-icon.png" alt=""><span>AB Download Manager</span></button>
+      <nav id="nav" aria-label="Main menu">
+        <details class="desktop-menu"><summary>File</summary><div class="menu-popup"><button id="addBtn"><span data-icon="AddLink"></span>New download</button><button onclick="addFromClipboard()"><span data-icon="Clipboard"></span>New download from clipboard</button><button id="importBtn"><span data-icon="List"></span>Import download list</button></div></details>
+        <details class="desktop-menu"><summary>Tasks</summary><div class="menu-popup"><button onclick="controlAllQueues('start')"><span data-icon="QueueStart"></span>Start queues</button><button onclick="controlAllQueues('stop')"><span data-icon="QueueStop"></span>Stop queues</button><hr><button onclick="bulkAction('pause')"><span data-icon="Stop"></span>Stop all</button><button onclick="selectedAction('remove')"><span data-icon="Delete"></span>Delete selected</button><button onclick="selectedAction('remove',true)"><span data-icon="Delete"></span>Delete selected files</button></div></details>
+        <details class="desktop-menu"><summary>Tools</summary><div class="menu-popup"><button class="nav-item" data-page="queue"><span data-icon="Queue"></span>Queues</button><button class="nav-item" data-page="categories"><span data-icon="Folder"></span>Categories</button><button class="nav-item" data-page="scheduler"><span data-icon="Clock"></span>Scheduler</button><button class="nav-item" data-page="browser"><span data-icon="Earth"></span>Firefox</button><hr><button class="nav-item" data-page="settings"><span data-icon="Settings"></span>Settings</button></div></details>
+        <details class="desktop-menu"><summary>Help</summary><div class="menu-popup"><button onclick="document.getElementById('aboutDialog').showModal()"><span data-icon="Info"></span>About</button><a href="https://github.com/sweenyxsky-oss/abdm-truenas" target="_blank" rel="noopener noreferrer">ABDM TrueNAS project</a><a href="https://abdownloadmanager.com" target="_blank" rel="noopener noreferrer">AB Download Manager</a></div></details>
+      </nav>
+      <div class="titlebar-spacer"></div>
+      <label class="global-search"><span data-icon="Search"></span><input id="globalSearch" placeholder="Search" aria-label="Search downloads"></label>
+      <button class="title-tool" id="themeBtn" title="Switch theme" aria-label="Switch theme"><span data-icon="Settings"></span></button>
+      <span class="connection-state" title="Service connection"><i class="status-dot"></i><span id="connection">Connecting…</span></span>
+    </header>
+    <header class="page-heading"><button class="secondary" onclick="navigateTo('dashboard')" aria-label="Back to downloads">‹</button><h1 id="page-title">Downloads</h1><p id="page-subtitle"></p></header>
     <section id="app"></section>
   </main>
 
@@ -33,48 +39,19 @@
 
   <dialog id="addDialog">
     <form method="dialog" id="addForm">
-      <div class="dialog-head"><div><h2>Add download</h2><p>Paste one or more URLs to add them to ABDM.</p></div><button class="icon-btn" value="cancel">×</button></div>
-      <label>URL(s)<textarea id="urlInput" rows="5" placeholder="https://example.com/file.zip"></textarea></label>
+      <div class="dialog-head"><div><h2>New download</h2></div><button class="icon-btn" value="cancel">×</button></div>
+      <label>Link<textarea id="urlInput" rows="5" placeholder="https://example.com/file.zip"></textarea></label>
       <div class="form-grid"><label>Save to<input id="pathInput" value="/downloads"></label><label>Queue<select id="queueInput"><option value="">No queue</option></select></label><label>Category<select id="categoryInput"><option value="">Automatic</option></select></label></div>
       <div class="dialog-actions"><button class="secondary" value="cancel">Cancel</button><button class="primary" id="submitDownload" value="default">Add download</button></div>
     </form>
   </dialog>
-  <dialog id="importDialog"><form method="dialog" id="importForm"><div class="dialog-head"><div><h2>Import download list</h2><p>Select a TXT file containing one URL per line.</p></div><button class="icon-btn" value="cancel">×</button></div><div style="padding:18px 20px"><input id="importFile" type="file" accept=".txt,text/plain"><div id="importPreview" style="margin-top:14px;max-height:45vh;overflow:auto"></div></div><div class="dialog-actions"><button class="secondary" value="cancel">Cancel</button><button class="primary" value="default">Start selected</button></div></form></dialog>
-  <script src="js/api.js?v=0.6.1"></script>
-  <script src="js/app.js?v=0.6.1"></script>
-  <script>
-  // Firefox build: relabel the browser page without modifying app.js.
-  titles.browser = ["Browser", "Firefox browser session"];
-  renderBrowser = new Function("return " + renderBrowser.toString().replace(/Chromium/g, "Firefox"))();
-  // Touch-safe restart (iPad/Safari): visible feedback, no cached request, ignore double taps.
-  let ffRestarting = false;
-  window.restartChromium = async function () {
-    if (ffRestarting) return;
-    ffRestarting = true;
-    const btn = Array.from(document.querySelectorAll(".browser-head button")).find(b => /Restart/.test(b.textContent));
-    if (btn) { btn.disabled = true; btn.textContent = "Restarting..."; }
-    try {
-      const apiKey = localStorage.getItem("abdmApiKey");
-      const r = await fetch(ABDM_API.baseUrl.replace(/\/$/, "") + "/browser/restart?t=" + Date.now(), {
-        method: "POST", cache: "no-store", credentials: "same-origin",
-        headers: Object.assign({ "Content-Type": "application/json" }, apiKey ? { "X-API-Key": apiKey } : {}),
-        body: "{}"
-      });
-      if (!r.ok) throw new Error("HTTP " + r.status + " " + (await r.text().catch(() => "")));
-    } catch (e) {
-      ffRestarting = false;
-      if (btn) { btn.disabled = false; btn.textContent = "Restart Firefox"; }
-      alert("Restart failed: " + e.message);
-      return;
-    }
-    setTimeout(() => { ffRestarting = false; reloadBrowser(); }, 6000);
-  };
-  // iPad: taps on buttons next to the VNC frame may never become "click" events; handle the tap directly.
-  document.addEventListener("touchend", function (ev) {
-    const b = ev.target.closest && ev.target.closest(".browser-head button");
-    if (b && /Restart/.test(b.textContent)) { ev.preventDefault(); window.restartChromium(); }
-  }, { passive: false });
-  </script>
-  <script>document.getElementById("menuBtn").onclick=()=>document.querySelector(".sidebar").classList.toggle("open");document.getElementById("nav").addEventListener("click",()=>document.querySelector(".sidebar").classList.remove("open"));</script>
+  <dialog id="importDialog"><form method="dialog" id="importForm"><div class="dialog-head"><div><h2>Import download list</h2></div><button class="icon-btn" value="cancel">×</button></div><div style="padding:18px 20px"><input id="importFile" type="file" accept=".txt,text/plain"><div id="importPreview" style="margin-top:14px;max-height:45vh;overflow:auto"></div></div><div class="dialog-actions"><button class="secondary" value="cancel">Cancel</button><button class="primary" value="default">Start selected</button></div></form></dialog>
+  <dialog id="questionDialog"><form method="dialog"><div class="dialog-head"><h2 id="questionTitle">AB Download Manager</h2></div><div class="question-body"><p id="questionMessage"></p><input id="questionInput" aria-label="Value"></div><div class="dialog-actions"><button class="secondary" value="cancel">Cancel</button><button class="primary" value="ok">OK</button></div></form></dialog>
+  <dialog id="aboutDialog"><div class="dialog-head"><h2>About</h2><button class="icon-btn" aria-label="Close" onclick="document.getElementById('aboutDialog').close()">×</button></div><div class="about-body"><img src="assets/app-icon.png" alt="AB Download Manager"><h2>AB Download Manager</h2><p>TrueNAS · v1.0</p><p>Based on AB Download Manager by Amir Hossein Baradaran</p><a href="https://github.com/sweenyxsky-oss/abdm-truenas" target="_blank" rel="noopener noreferrer">Project source</a></div></dialog>
+  <div id="downloadMenu" class="context-menu" hidden></div>
+  <script src="js/icons.js?v=1.0.0"></script>
+  <script src="js/api.js?v=1.0.0"></script>
+  <script src="js/app.js?v=1.0.0"></script>
+  <script src="js/desktop-ui.js?v=1.0.0"></script>
 </body>
 </html>

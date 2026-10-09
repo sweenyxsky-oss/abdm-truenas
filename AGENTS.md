@@ -1,3 +1,5 @@
 - Keep TrueNAS core-service registration separate from desktop GUI registration, so headless startup cannot instantiate desktop windows.
 - Apply application ownership during Docker COPY, not with a later recursive chown, to avoid duplicate image layers.
 - Verify headless download capture and API startup with the real-service regression test before changing runtime dependency registration.
+- Keep the web desktop-style presentation in desktop-ui.js and shared styles, preserving API operations in app.js/api.js, so GUI changes do not alter downloader behavior.
+- Derive GUI colors, icons and layout from the original ABDM desktop sources, adapting only unsupported desktop actions and narrow-screen layout.
