@@ -10,7 +10,7 @@
   <meta property="og:type" content="website">
   <meta name="twitter:card" content="summary">
   <link rel="icon" href="assets/app-icon.png" type="image/png">
-  <link rel="stylesheet" href="css/app.css?v=1.0.0">
+  <link rel="stylesheet" href="css/app.css?v=1.0.1">
 </head>
 <body>
   <main class="main">
@@ -21,6 +21,7 @@
         <details class="desktop-menu"><summary>Tasks</summary><div class="menu-popup"><button onclick="controlAllQueues('start')"><span data-icon="QueueStart"></span>Start queues</button><button onclick="controlAllQueues('stop')"><span data-icon="QueueStop"></span>Stop queues</button><hr><button onclick="bulkAction('pause')"><span data-icon="Stop"></span>Stop all</button><button onclick="selectedAction('remove')"><span data-icon="Delete"></span>Delete selected</button><button onclick="selectedAction('remove',true)"><span data-icon="Delete"></span>Delete selected files</button></div></details>
         <details class="desktop-menu"><summary>Tools</summary><div class="menu-popup"><button class="nav-item" data-page="queue"><span data-icon="Queue"></span>Queues</button><button class="nav-item" data-page="categories"><span data-icon="Folder"></span>Categories</button><button class="nav-item" data-page="scheduler"><span data-icon="Clock"></span>Scheduler</button><button class="nav-item" data-page="browser"><span data-icon="Earth"></span>Firefox</button><hr><button class="nav-item" data-page="settings"><span data-icon="Settings"></span>Settings</button></div></details>
         <details class="desktop-menu"><summary>Help</summary><div class="menu-popup"><button onclick="document.getElementById('aboutDialog').showModal()"><span data-icon="Info"></span>About</button><a href="https://github.com/sweenyxsky-oss/abdm-truenas" target="_blank" rel="noopener noreferrer">ABDM TrueNAS project</a><a href="https://abdownloadmanager.com" target="_blank" rel="noopener noreferrer">AB Download Manager</a></div></details>
+        <button class="titlebar-firefox nav-item" data-page="browser" title="Open Firefox" aria-label="Open Firefox"><span data-icon="Earth"></span><span>Firefox</span></button>
       </nav>
       <div class="titlebar-spacer"></div>
       <label class="global-search"><span data-icon="Search"></span><input id="globalSearch" placeholder="Search" aria-label="Search downloads"></label>
@@ -49,9 +50,9 @@
   <dialog id="questionDialog"><form method="dialog"><div class="dialog-head"><h2 id="questionTitle">AB Download Manager</h2></div><div class="question-body"><p id="questionMessage"></p><input id="questionInput" aria-label="Value"></div><div class="dialog-actions"><button class="secondary" value="cancel">Cancel</button><button class="primary" value="ok">OK</button></div></form></dialog>
   <dialog id="aboutDialog"><div class="dialog-head"><h2>About</h2><button class="icon-btn" aria-label="Close" onclick="document.getElementById('aboutDialog').close()">×</button></div><div class="about-body"><img src="assets/app-icon.png" alt="AB Download Manager"><h2>AB Download Manager</h2><p>TrueNAS · v1.0</p><p>Based on AB Download Manager by Amir Hossein Baradaran</p><a href="https://github.com/sweenyxsky-oss/abdm-truenas" target="_blank" rel="noopener noreferrer">Project source</a></div></dialog>
   <div id="downloadMenu" class="context-menu" hidden></div>
-  <script src="js/icons.js?v=1.0.0"></script>
-  <script src="js/api.js?v=1.0.0"></script>
-  <script src="js/app.js?v=1.0.0"></script>
-  <script src="js/desktop-ui.js?v=1.0.0"></script>
+  <script src="js/icons.js?v=1.0.1"></script>
+  <script src="js/api.js?v=1.0.1"></script>
+  <script src="js/app.js?v=1.0.1"></script>
+  <script src="js/desktop-ui.js?v=1.0.1"></script>
 </body>
 </html>
