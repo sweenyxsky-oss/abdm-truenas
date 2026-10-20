@@ -42,7 +42,7 @@
     <form method="dialog" id="addForm">
       <div class="dialog-head"><div><h2>New download</h2></div><button class="icon-btn" value="cancel">×</button></div>
       <label>Link<textarea id="urlInput" rows="5" placeholder="https://example.com/file.zip"></textarea></label>
-      <div class="form-grid"><label>Save to<input id="pathInput" value="/downloads"></label><label>Queue<select id="queueInput"><option value="">No queue</option></select></label><label>Category<select id="categoryInput"><option value="">Automatic</option></select></label></div>
+      <div class="form-grid"><label>Save to<input id="pathInput" value="/downloads"></label><label>Queue<select id="queueInput"><option value="0" selected>Main</option><option value="">No queue</option></select></label><label>Category<select id="categoryInput"><option value="">Automatic</option></select></label></div>
       <div class="dialog-actions"><button class="secondary" value="cancel">Cancel</button><button class="primary" id="submitDownload" value="default">Add download</button></div>
     </form>
   </dialog>

@@ -12,3 +12,35 @@ input,select,textarea{width:100%;border:1px solid var(--line);border-radius:6px;
 .titlebar-firefox.active{color:var(--accent);box-shadow:inset 0 -2px 0 var(--accent)}
 .titlebar-firefox .abdm-icon{width:16px;height:16px;flex-basis:16px;color:var(--accent)}
 @media(max-width:650px){.titlebar-firefox{padding:7px 8px;margin-left:2px;font-size:12px}}
+
+/* Queue Sub-navigation, Badges & Tabs */
+.queue-nav-group{display:flex;flex-direction:column;gap:2px;margin-bottom:4px}
+.queue-header-row{display:flex;align-items:center;width:100%;border-radius:5px;position:relative}
+.queue-header-row:hover{background:var(--panel2)}
+.queue-header-row.active{background:var(--panel2)}
+.queue-toggle-btn{border:0;background:transparent;padding:6px 4px 6px 6px;cursor:pointer;color:var(--muted);display:flex;align-items:center;justify-content:center}
+.queue-toggle-btn:hover{color:var(--text)}
+.queue-select-btn{border:0;background:transparent;display:flex;align-items:center;gap:8px;flex:1;min-width:0;padding:6px 8px 6px 0;cursor:pointer;text-align:left;font-size:13px}
+.queue-select-btn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.queue-subfilters{display:flex;flex-direction:column;gap:1px;padding-left:22px}
+.queue-subfilter{font-size:12px;padding:5px 8px;min-height:28px;border-radius:4px}
+.filter-count{margin-left:auto;font-size:11px;color:var(--muted);padding:1px 5px;border-radius:10px;background:var(--panel)}
+.home-filter.active .filter-count,.queue-header-row.active .filter-count{background:var(--line);color:var(--text)}
+.queue-status-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:8px 12px;background:var(--panel);border-bottom:1px solid var(--line)}
+.queue-status-bar-info{display:flex;align-items:center;gap:8px;font-size:12px}
+.queue-badge{display:flex;align-items:center;gap:5px;font-weight:500;color:var(--accent)}
+.queue-state-desc{color:var(--muted);font-size:11px}
+.queue-status-pills{display:flex;align-items:center;gap:4px}
+.queue-pill{border:1px solid var(--line);background:var(--bg);color:var(--text);padding:4px 9px;border-radius:4px;font-size:12px;cursor:pointer}
+.queue-pill:hover{background:var(--panel2)}
+.queue-pill.active{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.queue-pill-clear{border:0;background:transparent;color:var(--muted);padding:4px 8px;font-size:12px;cursor:pointer;border-radius:4px}
+.queue-pill-clear:hover{color:var(--danger)}
+.page-nav{min-width:28px;padding:5px 8px!important}
+.page-ellipsis{display:inline-flex;align-items:center;justify-content:center;padding:0 4px;color:var(--muted)}
+@media(max-width:650px){
+  .queue-nav-group{flex-direction:row;align-items:center;flex-shrink:0}
+  .queue-subfilters{flex-direction:row;padding-left:0}
+  .queue-status-bar{padding:6px 8px}
+  .queue-status-pills{width:100%;overflow-x:auto}
+}
